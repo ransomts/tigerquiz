@@ -62,7 +62,7 @@
 </main>
 <footer><span id="me"></span><span id="status" class="muted"></span></footer>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="socket.io/socket.io.js"></script>
 <script>
 const SYMS = ["▲", "◆", "●", "■"];
 const $ = (id) => document.getElementById(id);
@@ -70,7 +70,9 @@ const show = (id) => {
   document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === id));
 };
 
-const socket = io();
+// served from "/" directly, or from a sub-path behind a reverse proxy
+const BASE = location.pathname.replace(/\/[^/]*$/, "");
+const socket = io({ path: `${BASE}/socket.io` });
 let me = null;
 let timerHandle = null;
 let pending = null; // answer being composed for types with a Submit button
@@ -131,7 +133,7 @@ function join() {
 // offer a name rather than making everyone invent one
 $("diceBtn").onclick = async () => {
   try {
-    const res = await fetch("/api/nickname").then((r) => r.json());
+    const res = await fetch("api/nickname").then((r) => r.json());
     if (res.name) { $("name").value = res.name; $("joinErr").textContent = ""; }
   } catch { /* offline; the player can type their own */ }
 };

@@ -52,7 +52,7 @@ window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault()
 // ---------- list ----------
 async function showList() {
   $("listView").hidden = false;
-  const [quizzes, rosters] = await Promise.all([api("/api/quizzes"), api("/api/rosters")]);
+  const [quizzes, rosters] = await Promise.all([api("api/quizzes"), api("api/rosters")]);
 
   const box = $("quizList");
   box.innerHTML = "";
@@ -84,7 +84,7 @@ async function showList() {
     const del = el("button", null, "Delete");
     del.onclick = async () => {
       if (!confirm(`Delete the class list "${r.title}"?`)) return;
-      await fetch(`/api/roster/${encodeURIComponent(r.id)}`, { method: "DELETE" });
+      await fetch(`api/roster/${encodeURIComponent(r.id)}`, { method: "DELETE" });
       showList();
     };
     card.append(main, del);
@@ -93,11 +93,11 @@ async function showList() {
 }
 
 async function duplicateQuiz(id) {
-  const src = await api(`/api/quiz/${encodeURIComponent(id)}`);
+  const src = await api(`api/quiz/${encodeURIComponent(id)}`);
   if (src.error) return alert(src.error);
   src.title = `${src.title} (copy)`;
   const newId = await freeId(`${id}-copy`);
-  const res = await api(`/api/quiz/${encodeURIComponent(newId)}`, {
+  const res = await api(`api/quiz/${encodeURIComponent(newId)}`, {
     method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(src),
   });
   if (res.error) return alert(res.error);
@@ -105,7 +105,7 @@ async function duplicateQuiz(id) {
 }
 
 async function freeId(base) {
-  const taken = new Set((await api("/api/quizzes")).map((q) => q.id));
+  const taken = new Set((await api("api/quizzes")).map((q) => q.id));
   let id = base, n = 2;
   while (taken.has(id)) id = `${base}-${n++}`;
   return id;
@@ -113,7 +113,7 @@ async function freeId(base) {
 
 async function removeQuiz(id, title) {
   if (!confirm(`Delete "${title}" permanently?`)) return;
-  await fetch(`/api/quiz/${encodeURIComponent(id)}`, { method: "DELETE" });
+  await fetch(`api/quiz/${encodeURIComponent(id)}`, { method: "DELETE" });
   showList();
 }
 
@@ -135,7 +135,7 @@ function newQuiz() {
 }
 
 async function openQuiz(id) {
-  const data = await api(`/api/quiz/${encodeURIComponent(id)}`);
+  const data = await api(`api/quiz/${encodeURIComponent(id)}`);
   if (data.error) { alert(data.error); location.hash = ""; return; }
   quizId = id;
   quiz = data;
@@ -172,7 +172,7 @@ function touch() {
 }
 
 async function validate() {
-  const res = await api("/api/quiz-check", {
+  const res = await api("api/quiz-check", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(quiz),
   });
   const box = $("problems");
@@ -191,7 +191,7 @@ $("saveBtn").onclick = async () => {
   const id = $("fId").value.trim() || slug(quiz.title);
   if (!id) return alert("Give the quiz a title or a file name");
   $("fId").value = id;
-  const res = await api(`/api/quiz/${encodeURIComponent(id)}`, {
+  const res = await api(`api/quiz/${encodeURIComponent(id)}`, {
     method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(quiz),
   });
   if (res.error) {
@@ -440,7 +440,7 @@ function newRoster() {
   $("rosterState").textContent = "";
 }
 async function openRoster(id) {
-  const data = await api(`/api/roster/${encodeURIComponent(id)}`);
+  const data = await api(`api/roster/${encodeURIComponent(id)}`);
   if (data.error) { alert(data.error); location.hash = ""; return; }
   rosterId = id;
   $("rosterView").hidden = false;
@@ -459,7 +459,7 @@ $("rosterSaveBtn").onclick = async () => {
     const [name, sid] = line.split(",");
     return { name: (name || "").trim(), id: (sid || "").trim() };
   }).filter((s) => s.name);
-  const res = await api(`/api/roster/${encodeURIComponent(id)}`, {
+  const res = await api(`api/roster/${encodeURIComponent(id)}`, {
     method: "PUT", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title: $("rTitle").value.trim() || id, students }),
   });

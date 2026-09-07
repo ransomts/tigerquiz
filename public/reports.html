@@ -80,7 +80,7 @@ let allStudents = [];
 async function showList() {
   $("detailView").hidden = true;
   $("listView").hidden = false;
-  allGames = await fetch("/api/reports").then((r) => r.json());
+  allGames = await fetch("api/reports").then((r) => r.json());
   $("empty").hidden = allGames.length > 0;
   drawGames();
   if (!$("studentsPane").hidden) loadStudents();
@@ -118,7 +118,7 @@ function switchTab(which) {
 }
 
 async function loadStudents() {
-  allStudents = await fetch("/api/students").then((r) => r.json());
+  allStudents = await fetch("api/students").then((r) => r.json());
   $("noStudents").hidden = allStudents.length > 0;
   drawStudents();
 }
@@ -165,20 +165,20 @@ function showStudent(s) {
 
 // ---------- detail ----------
 async function showDetail(id) {
-  const res = await fetch(`/api/reports/${encodeURIComponent(id)}`);
+  const res = await fetch(`api/reports/${encodeURIComponent(id)}`);
   if (!res.ok) { location.hash = ""; return; }
   const r = await res.json();
   $("listView").hidden = true;
   $("detailView").hidden = false;
   $("dTitle").textContent = r.game.title;
   $("dWhen").textContent = `${fmtDate(r.game.started_at)} · PIN ${r.game.pin}`;
-  $("csvLink").href = `/api/reports/${encodeURIComponent(id)}/csv`;
+  $("csvLink").href = `api/reports/${encodeURIComponent(id)}/csv`;
   const msg = $("dMsg");
   msg.hidden = true;
   $("reviewBtn").onclick = async () => {
     $("reviewBtn").disabled = true;
     try {
-      const out = await fetch(`/api/reports/${encodeURIComponent(id)}/review-quiz`, {
+      const out = await fetch(`api/reports/${encodeURIComponent(id)}/review-quiz`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ threshold: 0.6 }),
@@ -199,7 +199,7 @@ async function showDetail(id) {
 
   $("delBtn").onclick = async () => {
     if (!confirm("Delete this report permanently?")) return;
-    await fetch(`/api/reports/${encodeURIComponent(id)}`, { method: "DELETE" });
+    await fetch(`api/reports/${encodeURIComponent(id)}`, { method: "DELETE" });
     location.hash = "";
   };
 

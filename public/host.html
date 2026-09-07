@@ -87,13 +87,15 @@
   <span class="muted">Space / Enter advances · <button id="muteBtn" class="linkbtn" title="Toggle sound">🔊 Sound on</button></span>
 </footer>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="socket.io/socket.io.js"></script>
 <script src="sound.js"></script>
 <script>
 const SYMS = ["▲", "◆", "●", "■"];
 const $ = (id) => document.getElementById(id);
 const show = (id) => document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === id));
-const socket = io();
+// served from "/" directly, or from a sub-path behind a reverse proxy
+const BASE = location.pathname.replace(/\/[^/]*$/, "");
+const socket = io({ path: `${BASE}/socket.io` });
 let pin = null;
 let hostToken = null;
 let timerHandle = null;
@@ -112,8 +114,8 @@ renderMute();
 
 async function loadLists() {
   const [quizzes, rosters] = await Promise.all([
-    fetch("/api/quizzes").then((r) => r.json()),
-    fetch("/api/rosters").then((r) => r.json()),
+    fetch("api/quizzes").then((r) => r.json()),
+    fetch("api/rosters").then((r) => r.json()),
   ]);
   const sel = $("quizSel");
   sel.innerHTML = "";
@@ -160,9 +162,9 @@ function adopt(res) {
   phase = "lobby";
   $("lobbyTitle").textContent = res.title;
   $("lobbyPin").textContent = pin;
-  $("joinUrl").textContent = `${location.host}`;
+  $("joinUrl").textContent = `${location.host}${BASE}`;
   $("hostPin").textContent = `PIN ${pin}`;
-  $("qr").src = `/api/qr.svg?text=${encodeURIComponent(`${location.origin}/?pin=${pin}`)}`;
+  $("qr").src = `api/qr.svg?text=${encodeURIComponent(`${location.origin}${BASE}/?pin=${pin}`)}`;
   // students cannot reach "localhost"; tell the host before the lesson, not during it
   const local = /^(localhost|127\.|\[?::1)/i.test(location.hostname);
   const warn = $("addrWarn");
