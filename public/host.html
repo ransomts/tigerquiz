@@ -51,7 +51,10 @@
   <section id="results" class="screen">
     <h2 id="rText" style="text-align:center"></h2>
     <div class="results-layout">
-      <div class="panel results-chart"><div id="rBody"></div></div>
+      <div class="panel results-chart">
+        <div id="rBody"></div>
+        <p id="rExplain" class="explain" hidden></p>
+      </div>
       <div class="panel results-board">
         <h3 class="muted results-heading">Leaderboard</h3>
         <ol id="board" class="board"></ol>
@@ -59,6 +62,7 @@
     </div>
     <div class="row controls">
       <button id="rPrevBtn" title="Ask this question again">◀ Ask again</button>
+      <button id="revoteBtn" title="Let students discuss, then vote again">Discuss &amp; re-vote</button>
       <button id="nextBtn" class="primary">Next</button>
       <select id="rJumpSel" title="Jump to a question"></select>
     </div>
@@ -227,6 +231,7 @@ $("nextBtn").onclick = () => socket.emit("host:next");
 $("skipBtn").onclick = () => socket.emit("host:skip");
 $("prevBtn").onclick = () => socket.emit("host:prev");
 $("rPrevBtn").onclick = () => socket.emit("host:prev");
+$("revoteBtn").onclick = () => socket.emit("host:revote");
 $("pauseBtn").onclick = () => socket.emit("host:pause", !paused);
 $("newGameBtn").onclick = () => { clearSession(); location.reload(); };
 
@@ -279,6 +284,9 @@ socket.on("game:question", (q) => {
   // the image and the answer area share the screen, so shrink the area when one is shown
   $("question").classList.toggle("has-image", !!q.image);
   $("skipBtn").textContent = q.type === "slide" ? "Continue" : "End question now";
+  $("qCount").textContent = q.revote
+    ? `Question ${q.index + 1} of ${q.total} · second vote`
+    : `Question ${q.index + 1} of ${q.total}`;
 
   const body = $("qBody");
   body.className = "";
@@ -365,7 +373,19 @@ socket.on("game:results", (r) => {
   const body = $("rBody");
   body.className = "";
   body.innerHTML = "";
+  body.parentElement.querySelectorAll(".shiftnote").forEach((n) => n.remove());
   (SUMMARY[r.summary.kind] || SUMMARY.none)(r, body);
+
+  const ex = $("rExplain");
+  ex.hidden = !r.explanation;
+  ex.textContent = r.explanation || "";
+
+  // offer a discussion round while the class is split, but not twice on the same question
+  const canRevote = r.summary.kind === "counts" && !!r.answer && !r.priorSummary;
+  $("revoteBtn").hidden = !canRevote;
+  $("revoteBtn").classList.toggle("primary", canRevote && r.suggestDiscussion);
+  $("nextBtn").classList.toggle("primary", !(canRevote && r.suggestDiscussion));
+
   renderBoard($("board"), r.leaderboard);
   $("nextBtn").textContent = r.isLast ? "Show final standings" : "Next question";
   $("rPrevBtn").disabled = false;
@@ -377,19 +397,33 @@ const SUMMARY = {
   counts: (r, body) => {
     body.className = "bars";
     const s = r.summary;
-    const max = Math.max(1, ...s.counts);
+    const prior = r.priorSummary && r.priorSummary.kind === "counts" ? r.priorSummary.counts : null;
+    const max = Math.max(1, ...s.counts, ...(prior || []));
     // which tiles to mark correct: one index, a set of them, or none for a poll
     const right = new Set(r.answer ? (r.answer.indexes ?? [r.answer.index]).filter((v) => v != null) : []);
     s.counts.forEach((n, i) => {
+      const was = prior ? prior[i] : null;
       const b = document.createElement("div");
       b.className = "bar" + (right.has(i) ? " correct" : "");
       // bar heights are proportional via flex-grow: spacer takes (max - n), fill takes n
-      b.innerHTML = `<span class="count">${n}</span>
-        <div class="track"><div class="spacer" style="flex-grow:${max - n}"></div><div class="fillbar c${i}" style="flex-grow:${n}"></div></div>
+      const ghost = prior
+        ? `<div class="track"><div class="spacer" style="flex-grow:${max - was}"></div><div class="fillbar ghost c${i}" style="flex-grow:${was}"></div></div>`
+        : "";
+      b.innerHTML = `<span class="count">${prior ? `<span class="was">${was}→</span>` : ""}${n}</span>
+        <div class="tracks">${ghost}<div class="track"><div class="spacer" style="flex-grow:${max - n}"></div><div class="fillbar c${i}" style="flex-grow:${n}"></div></div></div>
         <div class="label c${i}"><span class="sym">${SYMS[i] ?? i + 1}</span><span class="text"></span></div>`;
       b.querySelector(".text").textContent = s.labels[i] ?? "";
       body.appendChild(b);
     });
+    if (prior) {
+      const rightIdx = [...right];
+      const before = rightIdx.reduce((t, i) => t + prior[i], 0);
+      const after = rightIdx.reduce((t, i) => t + s.counts[i], 0);
+      const note = document.createElement("p");
+      note.className = "shiftnote";
+      note.textContent = `Correct: ${before} before discussion, ${after} after`;
+      body.parentElement.insertBefore(note, body.nextSibling);
+    }
   },
 
   slider: (r, body) => {

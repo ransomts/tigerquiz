@@ -72,7 +72,7 @@ async function checkQuiz(file) {
   if (!Array.isArray(raw.questions) || !raw.questions.length) return err("no questions array");
 
   for (const key of Object.keys(raw)) {
-    if (!["title", "questions", "identifier", "shuffleQuestions", "shuffleAnswers", "phoneText"].includes(key))
+    if (!["title", "note", "questions", "identifier", "shuffleQuestions", "shuffleAnswers", "phoneText"].includes(key))
       warn(`unknown quiz field "${key}", it will be ignored`);
   }
 
@@ -122,6 +122,12 @@ async function checkQuiz(file) {
     if (q.type === "multi" && q.answers.length === q.choices.length)
       warn(`${at}: every choice is correct`);
     if (q.type === "slide" && !q.text && !q.image) warn(`${at}: slide has neither text nor an image`);
+    // an explanation is what turns a wrong answer into something learned
+    if (!q.explanation && q.type !== "slide" && q.type !== "poll" && q.type !== "wordcloud")
+      warn(`${at}: no explanation, students will not learn why they were wrong`);
+    if (q.explanation && q.explanation.length > 300) warn(`${at}: explanation is ${q.explanation.length} characters, it may not fit`);
+    if (q.discuss && !["choice", "truefalse", "multi"].includes(q.type))
+      warn(`${at}: discuss only affects choice-style questions`);
 
     // images are referenced by name, so a typo only shows up at game time
     if (q.image && q.image.startsWith("/quiz-images/")) {

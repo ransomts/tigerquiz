@@ -17,6 +17,7 @@ const emit = (s, ev, ...a) => new Promise((r) => s.emit(ev, ...a, r));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const fail = [];
+const generatedQuizzes = []; // review quizzes written during the run, removed at the end
 let count = 0;
 function check(name, cond, extra = "") {
   count += 1;
@@ -46,6 +47,8 @@ try {
   await testPauseAndNavigation();
   await testHostReconnect();
   await testPhoneText();
+  await testExplanationsAndRevote();
+  await testDistractorsAndReview();
 } catch (e) {
   console.error("\nthrew:", e.message);
   fail.push(e.message);
@@ -53,6 +56,7 @@ try {
 
 server.kill();
 await rm(DATA, { recursive: true, force: true });
+for (const id of generatedQuizzes) await rm(path.join(ROOT, "quizzes", `${id}.json`), { force: true });
 console.log(`\n${count - fail.length}/${count} passed`);
 if (fail.length) { console.error(`FAILED: ${fail.join(", ")}`); process.exit(1); }
 
@@ -397,6 +401,137 @@ async function testPhoneText() {
   void hq; void playerQ;
 
   s.close();
+  host.close();
+  await wait(50);
+}
+
+
+async function testExplanationsAndRevote() {
+  console.log("\n# explanations and peer instruction");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quizId: "all-types" });
+
+  const players = [];
+  for (const [nick, id] of [["ada", "1001"], ["alan", "1002"], ["grace", "1003"]]) {
+    const s = io(URL);
+    await once(s, "connect");
+    await emit(s, "player:join", { pin: game.pin, name: nick, identifier: id });
+    const p = { name: nick, s, results: [] };
+    s.on("game:results", (r) => p.results.push(r));
+    players.push(p);
+  }
+
+  let nextQ = once(host, "game:question");
+  host.emit("host:start");
+  await nextQ; // the slide
+  nextQ = once(host, "game:question");
+  host.emit("host:next");
+  const q = await nextQ; // the choice question
+  check("a choice question is open", q.type === "choice", q.type);
+  check("the first vote is not flagged as a re-vote", q.revote === false);
+
+  // split the class: one right, two wrong
+  const right = q.choices.indexOf("Mars");
+  const wrong = (right + 1) % q.choices.length;
+  let gotResults = once(host, "game:results");
+  await emit(players[0].s, "player:answer", right);
+  await emit(players[1].s, "player:answer", wrong);
+  await emit(players[2].s, "player:answer", wrong);
+  const first = await gotResults;
+
+  check("the host results carry an explanation", typeof first.explanation === "string" && first.explanation.includes("iron oxide"), first.explanation);
+  check("players receive the explanation too", players[0].results.at(-1).explanation === first.explanation);
+  check("a split vote suggests discussion", first.suggestDiscussion === true, JSON.stringify(first.summary.counts));
+  check("there is no prior vote on the first pass", first.priorSummary == null);
+  const firstCounts = first.summary.counts.slice();
+
+  // re-vote: same question, first distribution preserved
+  const revoteQ = once(host, "game:question");
+  gotResults = once(host, "game:results");
+  host.emit("host:revote");
+  const again = await revoteQ;
+  check("the re-vote reopens the same question", again.index === q.index, `${q.index} then ${again.index}`);
+  check("players are told it is a second vote", again.revote === true);
+
+  // after discussing, everyone gets it right
+  for (const p of players) await emit(p.s, "player:answer", again.choices.indexOf("Mars"));
+  const second = await gotResults;
+  check("the first vote is kept for comparison",
+    JSON.stringify(second.priorSummary.counts) === JSON.stringify(firstCounts),
+    JSON.stringify(second.priorSummary?.counts));
+  check("the second vote is recorded separately",
+    second.summary.counts[again.choices.indexOf("Mars")] === 3,
+    JSON.stringify(second.summary.counts));
+  check("a second re-vote is not offered", second.priorSummary != null);
+
+  // scores must reflect the re-vote, not both rounds
+  const adaScore = players[0].results.at(-1).score;
+  check("the re-vote replaces the first score rather than adding to it", adaScore <= 1100, String(adaScore));
+
+  for (const p of players) p.s.close();
+  host.close();
+  await wait(50);
+}
+
+async function testDistractorsAndReview() {
+  console.log("\n# distractors and review quizzes");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quizId: "sample" });
+
+  const players = [];
+  for (const nick of ["ada", "alan", "grace"]) {
+    const s = io(URL);
+    await once(s, "connect");
+    await emit(s, "player:join", { pin: game.pin, name: nick });
+    players.push(s);
+  }
+
+  // everyone picks the same wrong answer on every question, so the distractor is unambiguous
+  let nextQ = once(host, "game:question");
+  host.emit("host:start");
+  for (let i = 0; i < 4; i++) {
+    const q = await nextQ;
+    nextQ = once(host, "game:question");
+    const gotResults = once(host, "game:results");
+    const wrong = q.choices.findIndex((_, idx) => idx !== 0) === 1 ? 1 : 0;
+    for (const s of players) await emit(s, "player:answer", wrong);
+    await gotResults;
+    await wait(20);
+    host.emit("host:next");
+  }
+  const end = await once(host, "game:end");
+
+  const rep = await fetch(`${URL}/api/reports/${end.reportId}`).then((r) => r.json());
+  const q0 = rep.questions[0];
+  check("the report stores choice labels", Array.isArray(q0.choices) && q0.choices.length === 4);
+  check("responses are broken down by choice", q0.distractors.length > 0, JSON.stringify(q0.distractors));
+  check("the breakdown marks which choice was correct", q0.distractors.some((d) => d.correct === true) || q0.distractors.every((d) => d.correct === false));
+  check("the top wrong answer is named", q0.topDistractor && q0.topDistractor.n === 3, JSON.stringify(q0.topDistractor));
+  check("a single stray pick is not called a pattern",
+    rep.questions.every((q) => !q.topDistractor || q.topDistractor.n >= 2),
+    rep.questions.map((q) => q.topDistractor?.n ?? "-").join(","));
+  check("the source position is kept for review", typeof q0.sourceIdx === "number");
+
+  // build a review quiz from what was missed
+  const made = await fetch(`${URL}/api/reports/${end.reportId}/review-quiz`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ threshold: 0.6 }),
+  }).then((r) => r.json());
+  check("a review quiz is generated", made.ok === true && made.count > 0, made.error || String(made.count));
+
+  const list = await fetch(`${URL}/api/quizzes`).then((r) => r.json());
+  check("the review quiz appears in the quiz list", list.some((x) => x.id === made.id), made.id);
+  const reviewGame = await emit(host, "host:create", { quizId: made.id });
+  check("the review quiz is playable", reviewGame.ok === true, reviewGame.error);
+  check("it holds only the missed questions", reviewGame.total === made.count, `${reviewGame.total} vs ${made.count}`);
+
+  // clean up the generated file so repeated runs stay tidy
+  generatedQuizzes.push(made.id);
+
+  for (const s of players) s.close();
   host.close();
   await wait(50);
 }

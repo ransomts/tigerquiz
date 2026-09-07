@@ -102,6 +102,8 @@ button.choice:active { transform: scale(0.98); }
 .bar .track { flex: 1; width: 100%; display: flex; flex-direction: column; }
 .bar .fillbar { width: 100%; min-height: 6px; border-radius: 0.5rem 0.5rem 0 0; transition: flex-grow 0.4s; }
 .bar.correct .fillbar { outline: 4px solid #fff; }
+/* in a re-vote only the current bar is outlined, so the two rounds stay distinct */
+.bar.correct .fillbar.ghost { outline: 2px dashed #ffffff80; }
 .bar .label {
   width: 100%; display: flex; align-items: center; gap: 0.5rem;
   padding: 0.6rem 0.75rem; border-radius: 0.5rem; color: #fff; font-weight: 600;
@@ -310,3 +312,36 @@ body.is-paused .choice, body.is-paused .orderitem { opacity: 0.5; }
   font-size: clamp(1.05rem, 4.5vw, 1.5rem); line-height: 1.25;
 }
 #question .qimg { max-height: 22vh; }
+
+
+/* ---------- explanations ---------- */
+.explain {
+  margin: 0.5rem 0 0; padding: 0.75rem 1rem;
+  background: rgba(0, 0, 0, 0.22); border-radius: 0.6rem;
+  font-size: 1.05rem; line-height: 1.4; text-align: center;
+}
+#resultExplain { max-width: 34rem; }
+
+/* ---------- peer instruction: first vote beside second ---------- */
+.bar .tracks { flex: 1; width: 100%; display: flex; gap: 0.25rem; min-height: 0; }
+.bar .tracks .track { flex: 1; }
+.fillbar.ghost { opacity: 0.35; }
+.bar .count .was { color: var(--muted); font-size: 0.7em; font-weight: 600; }
+.shiftnote { text-align: center; margin: 0.5rem 0 0; font-weight: 700; }
+
+/* ---------- report: what people chose ---------- */
+.qcard { background: var(--panel); border-radius: 0.75rem; padding: 1rem; margin-bottom: 0.75rem; }
+.qcard-head { font-weight: 700; margin-bottom: 0.35rem; }
+.qcard-note { color: #ffb27a; font-size: 0.95rem; margin-bottom: 0.6rem; }
+.qcard-explain { margin-top: 0.6rem; color: var(--muted); font-size: 0.95rem; border-left: 3px solid #ffffff33; padding-left: 0.75rem; }
+.dbars { display: flex; flex-direction: column; gap: 0.3rem; }
+.dbar {
+  position: relative; display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.45rem 0.7rem; border-radius: 0.4rem;
+  background: #ffffff12; overflow: hidden;
+}
+.dbar-fill { position: absolute; inset: 0 auto 0 0; background: #ffffff1f; }
+.dbar.right .dbar-fill { background: #26890c66; }
+.dbar.wrong .dbar-fill { background: #e21b3c4d; }
+.dbar-label { position: relative; flex: 1; overflow-wrap: anywhere; }
+.dbar-n { position: relative; font-variant-numeric: tabular-nums; font-weight: 700; }

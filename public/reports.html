@@ -27,16 +27,22 @@
       </div>
       <div class="row">
         <a id="csvLink" class="btnlink" href="#">Download CSV</a>
+        <button id="reviewBtn">Make a review quiz</button>
         <button id="delBtn">Delete</button>
       </div>
     </div>
 
     <div id="dStats" class="statrow"></div>
+    <div id="dMsg" class="callout" hidden></div>
     <div id="dReview"></div>
     <div id="dAbsent"></div>
 
     <h3>Questions</h3>
     <div class="tablewrap"><table id="qTable"></table></div>
+
+    <h3>What people chose</h3>
+    <p class="muted">The wrong answer a class lands on names the misconception. Correct answers are marked.</p>
+    <div id="dDistract"></div>
 
     <h3>Players</h3>
     <div class="tablewrap"><table id="pTable"></table></div>
@@ -78,6 +84,30 @@ async function showDetail(id) {
   $("dTitle").textContent = r.game.title;
   $("dWhen").textContent = `${fmtDate(r.game.started_at)} · PIN ${r.game.pin}`;
   $("csvLink").href = `/api/reports/${encodeURIComponent(id)}/csv`;
+  const msg = $("dMsg");
+  msg.hidden = true;
+  $("reviewBtn").onclick = async () => {
+    $("reviewBtn").disabled = true;
+    try {
+      const out = await fetch(`/api/reports/${encodeURIComponent(id)}/review-quiz`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ threshold: 0.6 }),
+      }).then((res) => res.json());
+      msg.hidden = false;
+      msg.innerHTML = "";
+      if (out.error) {
+        msg.appendChild(el("p", null, out.error));
+      } else {
+        msg.appendChild(el("h3", null, "Review quiz created"));
+        msg.appendChild(el("p", null,
+          `"${out.title}" has the ${out.count} question${out.count === 1 ? "" : "s"} this class did worst on. It is in your quizzes folder and will appear in the host list.`));
+      }
+    } finally {
+      $("reviewBtn").disabled = false;
+    }
+  };
+
   $("delBtn").onclick = async () => {
     if (!confirm("Delete this report permanently?")) return;
     await fetch(`/api/reports/${encodeURIComponent(id)}`, { method: "DELETE" });
@@ -140,6 +170,8 @@ async function showDetail(id) {
     ]),
     r.questions.map((q) => (q.correctRate !== null && q.correctRate < 0.5 ? "warn" : "")));
 
+  renderDistractors(r);
+
   const idLabel = r.players.some((p) => p.identifier) ? "Identifier" : null;
   buildTable($("pTable"),
     ["Rank", "Nickname", ...(idLabel ? [idLabel] : []), "Score", "Correct"],
@@ -147,6 +179,36 @@ async function showDetail(id) {
       p.rank ?? "—", p.name, ...(idLabel ? [p.identifier ?? "—"] : []),
       p.score, p.scored ? `${p.correct}/${p.scored}` : "—",
     ]));
+}
+
+function renderDistractors(r) {
+  const box = $("dDistract");
+  box.innerHTML = "";
+  const withData = r.questions.filter((q) => q.distractors && q.distractors.length);
+  if (!withData.length) { box.appendChild(el("p", "muted", "No responses to break down.")); return; }
+
+  for (const q of withData) {
+    const card = el("div", "qcard");
+    card.appendChild(el("div", "qcard-head", `Q${q.idx + 1}. ${q.text}`));
+    if (q.topDistractor) {
+      card.appendChild(el("div", "qcard-note",
+        `Most common wrong answer: "${q.topDistractor.label}", chosen ${q.topDistractor.n} time${q.topDistractor.n === 1 ? "" : "s"}`));
+    }
+    const total = q.distractors.reduce((t, d) => t + d.n, 0) || 1;
+    const list = el("div", "dbars");
+    for (const d of q.distractors) {
+      const row = el("div", "dbar" + (d.correct ? " right" : d.correct === false ? " wrong" : ""));
+      const fill = el("div", "dbar-fill");
+      fill.style.width = `${(d.n / total) * 100}%`;
+      const label = el("span", "dbar-label", d.correct ? `${d.label} ✓` : d.label);
+      const n = el("span", "dbar-n", String(d.n));
+      row.append(fill, label, n);
+      list.appendChild(row);
+    }
+    card.appendChild(list);
+    if (q.explanation) card.appendChild(el("div", "qcard-explain", q.explanation));
+    box.appendChild(card);
+  }
 }
 
 function buildTable(table, head, rows, rowClasses = []) {

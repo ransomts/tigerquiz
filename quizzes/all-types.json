@@ -9,22 +9,39 @@
     {
       "type": "choice",
       "text": "Which planet is known as the Red Planet?",
-      "choices": ["Venus", "Mars", "Jupiter", "Mercury"],
+      "choices": [
+        "Venus",
+        "Mars",
+        "Jupiter",
+        "Mercury"
+      ],
       "answer": 1,
-      "time": 20
+      "time": 20,
+      "explanation": "Mars looks red because its surface is covered in iron oxide, the same compound as rust."
     },
     {
       "type": "truefalse",
       "text": "The Pacific is the largest ocean on Earth.",
       "answer": true,
-      "time": 10
+      "time": 10,
+      "explanation": "The Pacific covers about a third of the planet's surface, more than all land combined."
     },
     {
       "type": "multi",
       "text": "Which of these are prime numbers?",
-      "choices": ["9", "11", "17", "21"],
-      "answers": [1, 2],
-      "time": 25
+      "choices": [
+        "9",
+        "11",
+        "17",
+        "21"
+      ],
+      "answers": [
+        1,
+        2
+      ],
+      "time": 25,
+      "explanation": "9 is 3x3 and 21 is 3x7, so both have factors other than 1 and themselves. 11 and 17 do not.",
+      "discuss": true
     },
     {
       "type": "slider",
@@ -34,24 +51,41 @@
       "step": 1,
       "answer": 206,
       "tolerance": 5,
-      "time": 25
+      "time": 25,
+      "explanation": "Adults have 206. Babies are born with around 270, and some fuse together as they grow."
     },
     {
       "type": "text",
       "text": "What is the chemical symbol for gold?",
-      "accept": ["Au"],
-      "time": 20
+      "accept": [
+        "Au",
+        "aurum",
+        "gold"
+      ],
+      "time": 20,
+      "explanation": "Au, from the Latin aurum. Ag is silver, which is a common mix-up."
     },
     {
       "type": "order",
       "text": "Put these events in chronological order.",
-      "items": ["Moon landing", "Fall of the Berlin Wall", "First iPhone", "COVID-19 pandemic"],
-      "time": 40
+      "items": [
+        "Moon landing",
+        "Fall of the Berlin Wall",
+        "First iPhone",
+        "COVID-19 pandemic"
+      ],
+      "time": 40,
+      "explanation": "1969, 1989, 2007, 2020."
     },
     {
       "type": "poll",
       "text": "How did this unit feel?",
-      "choices": ["Too easy", "About right", "Hard but fair", "Too hard"],
+      "choices": [
+        "Too easy",
+        "About right",
+        "Hard but fair",
+        "Too hard"
+      ],
       "time": 15
     },
     {

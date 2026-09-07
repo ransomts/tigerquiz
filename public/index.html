@@ -46,6 +46,7 @@
       <div id="resultPts" style="font-size:1.5rem"></div>
       <div id="resultRank" class="rankline"></div>
       <div id="resultGap" class="muted"></div>
+      <p id="resultExplain" class="explain" hidden></p>
     </div>
   </section>
 
@@ -152,7 +153,8 @@ function renderQuestion(q) {
   const img = $("qImage");
   img.hidden = !q.image;
   img.src = q.image || "";
-  $("prompt").textContent = PROMPTS[q.type] || "";
+  // a second vote on the same question, after the class has discussed it
+  $("prompt").textContent = q.revote ? "Discuss, then answer again" : PROMPTS[q.type] || "";
   $("submitRow").hidden = true;
   $("submitBtn").disabled = true;
   $("submitBtn").textContent = "Submit";
@@ -376,6 +378,10 @@ socket.on("game:results", (r) => {
   const moved = (r.prevRank ?? r.rank) - r.rank;
   const movement = moved > 0 ? ` · up ${moved} place${moved > 1 ? "s" : ""}` : moved < 0 ? ` · down ${-moved}` : "";
   $("resultRank").textContent = `Rank #${r.rank} · ${r.score} pts${movement}`;
+  const ex = $("resultExplain");
+  ex.hidden = !r.explanation;
+  ex.textContent = r.explanation || "";
+
   $("resultGap").textContent = !r.ahead
     ? (r.rank === 1 ? "You're in the lead!" : "")
     : r.ahead.gap === 0

@@ -2,7 +2,7 @@ import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import QRCode from "qrcode";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -64,6 +64,8 @@ async function loadQuiz(id) {
 
 /** A copy of the quiz with order randomised per the quiz's own flags. */
 function prepareQuiz(quiz) {
+  // sourceIndex is set during normalisation and survives shuffling, so a review
+  // quiz built from a report can find the original question in the file
   let questions = quiz.questions;
   if (quiz.shuffleQuestions) questions = Q.shuffled(questions);
   if (quiz.shuffleAnswers) {
@@ -163,6 +165,72 @@ app.get("/api/reports/:id/csv", (req, res) => {
   res.type("text/csv").set("Content-Disposition", `attachment; filename="${csvName(report.game)}"`).send(toCsv(report));
 });
 
+/**
+ * Build a new quiz from the questions a class got wrong, for spaced review in a
+ * later lesson. Questions are looked up in the original quiz file by the source
+ * index recorded at play time, so shuffling does not confuse the mapping.
+ */
+app.post("/api/reports/:id/review-quiz", express.json(), async (req, res) => {
+  const report = store.getReport(req.params.id);
+  if (!report) return res.status(404).json({ error: "No such game" });
+  const threshold = clamp(Number(req.body?.threshold ?? 0.6), 0.05, 1);
+  try {
+    const source = await loadQuiz(report.game.quiz_id);
+    const missed = report.questions
+      .filter((q) => q.correctRate !== null && q.correctRate < threshold && q.sourceIdx != null)
+      .sort((a, b) => a.correctRate - b.correctRate);
+    if (!missed.length) return res.status(400).json({ error: "Nothing was missed often enough to review" });
+
+    const picked = [];
+    const seen = new Set();
+    for (const q of missed) {
+      if (seen.has(q.sourceIdx)) continue;
+      seen.add(q.sourceIdx);
+      const original = source.questions[q.sourceIdx];
+      if (original) picked.push(stripInternals(original));
+    }
+    if (!picked.length) return res.status(400).json({ error: "The original quiz no longer has those questions" });
+
+    const id = await uniqueQuizId(`review-${report.game.quiz_id}`);
+    const quiz = {
+      title: `Review: ${source.title}`,
+      note: `Questions the class missed on ${new Date(report.game.started_at).toISOString().slice(0, 10)}`,
+      shuffleQuestions: true,
+      shuffleAnswers: !!source.shuffleAnswers,
+      questions: picked,
+    };
+    await writeFile(path.join(QUIZ_DIR, `${id}.json`), JSON.stringify(quiz, null, 2) + "\n", "utf8");
+    res.json({ ok: true, id, title: quiz.title, count: picked.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+const clamp = (n, lo, hi) => (Number.isFinite(n) ? Math.min(Math.max(n, lo), hi) : hi);
+
+/** Drop the fields normalisation added, so the written file reads like a hand-made one. */
+function stripInternals(q) {
+  const out = { ...q };
+  for (const k of ["sourceIndex", "phoneText"]) delete out[k];
+  if (out.explanation == null) delete out.explanation;
+  if (out.discuss === false) delete out.discuss;
+  if (out.type === "choice") delete out.type;
+  // images were rewritten to a URL path; put the bare filename back
+  if (typeof out.image === "string" && out.image.startsWith("/quiz-images/"))
+    out.image = decodeURIComponent(out.image.replace("/quiz-images/", ""));
+  return out;
+}
+
+async function uniqueQuizId(base) {
+  const safe = base.replace(/[^\w-]+/g, "-").slice(0, 40);
+  let id = safe;
+  let n = 2;
+  while (await readFile(path.join(QUIZ_DIR, `${id}.json`), "utf8").then(() => true, () => false)) {
+    id = `${safe}-${n++}`;
+  }
+  return id;
+}
+
 app.delete("/api/reports/:id", (req, res) => {
   store.deleteGame(req.params.id);
   res.json({ ok: true });
@@ -215,6 +283,20 @@ function toCsv(report) {
 
 const formatResponse = (r) => (Array.isArray(r) ? r.join(" | ") : r == null ? "" : String(r));
 
+/**
+ * Peer instruction pays off when opinion is divided. Suggest a re-vote when the
+ * class is split, meaning between a third and four fifths got it right.
+ */
+function splitVote(summary, answerView) {
+  if (!answerView || summary.kind !== "counts" || !summary.counts) return false;
+  const total = summary.counts.reduce((a, b) => a + b, 0);
+  if (total < 3) return false;
+  const right = answerView.indexes ?? [answerView.index];
+  const got = right.reduce((t, i) => t + (summary.counts[i] ?? 0), 0);
+  const rate = got / total;
+  return rate >= 0.3 && rate <= 0.8;
+}
+
 // ---------- game state ----------
 /** @type {Map<string, Room>} */
 const rooms = new Map();
@@ -246,6 +328,7 @@ class Room {
     this.pausedAt = 0;
     this.pausedMs = 0; // total time spent paused during the current question
     this.lastResults = null; // replayed to a host that reconnects mid-results
+    this.priorVote = null; // first-round result, while a discussion re-vote is running
     // score and streak for every player as of the start of each question, so a
     // question can be replayed without double-counting what it already awarded
     this.snapshots = new Map();
@@ -317,6 +400,8 @@ class Room {
       [...this.players.values()].map((p) => [p.name, { score: p.score, streak: p.streak || 0, prevRank: p.prevRank }])
     ));
 
+    if (!this.revoting) this.priorVote = null;
+    this.revoting = false;
     this.qIndex = index;
     const q = this.question;
     this.state = "question";
@@ -341,6 +426,7 @@ class Room {
       totalMs: q.time * 1000,
       remainingMs: this.remainingMs,
       paused: this.paused,
+      revote: !!this.priorVote,
     };
     const forHost = { ...head, ...Q.hostView(q, this.pres) };
     const forPlayer = { ...head, ...Q.playerView(q, this.pres, { showText: this.quiz.phoneText }) };
@@ -421,26 +507,40 @@ class Room {
       }
     }
 
-    const answerLabel = Q.answerView(q, this.pres)?.label ?? null;
-    store.recordQuestion(this.id, this.qIndex, q.type, q.text, answerLabel);
+    const answerView = Q.answerView(q, this.pres);
+    store.recordQuestion(this.id, this.qIndex, {
+      type: q.type,
+      text: q.text,
+      answerLabel: answerView?.label ?? null,
+      choices: Q.choiceLabels(q),
+      explanation: q.explanation,
+      sourceIndex: q.sourceIndex,
+      correctAnswer: q.type === "multi" ? q.answers : q.answer,
+    });
     store.recordAnswers(this.id, this.qIndex, rows);
 
     const responses = [...this.answers.values()].map((a) => a.response);
     const board = this.leaderboard();
     for (const b of board) this.players.get(b.name).prevRank = this.players.get(b.name).prevRank ?? b.rank;
 
+    const summary = Q.summarize(q, this.pres, responses);
     this.lastResults = {
       index: this.qIndex,
       text: q.text,
       type: q.type,
       image: q.image,
-      answer: Q.answerView(q, this.pres),
-      summary: Q.summarize(q, this.pres, responses),
+      answer: answerView,
+      explanation: q.explanation,
+      // a re-vote is worth offering whenever opinion was split, and the quiz can ask for it
+      suggestDiscussion: q.discuss || splitVote(summary, answerView),
+      summary,
+      priorSummary: this.priorVote,
       answered: responses.length,
       players: this.players.size,
       leaderboard: board.slice(0, 5),
       isLast: this.qIndex === this.quiz.questions.length - 1,
     };
+    this.priorVote = null;
     io.to(this.hostRoom).emit("game:results", this.lastResults);
 
     for (const p of this.players.values()) {
@@ -459,7 +559,8 @@ class Room {
         rank: idx + 1,
         prevRank: p.prevRank ?? idx + 1,
         ahead: ahead ? { name: ahead.name, gap: ahead.score - p.score } : null,
-        answer: Q.answerView(q, this.pres),
+        answer: answerView,
+        explanation: q.explanation,
         answered: p.last.response != null,
       });
       p.prevRank = idx + 1;
@@ -586,6 +687,16 @@ io.on("connection", (socket) => {
       roster: room.roster ? { title: room.roster.title, count: room.roster.students.length } : null,
       questions: room.quiz.questions.map((q, i) => ({ index: i, type: q.type, text: q.text })),
     });
+  });
+
+  // peer instruction: keep the first vote, ask the same question again,
+  // then show both distributions side by side
+  socket.on("host:revote", () => {
+    const room = hostRoomFor(socket);
+    if (!room || room.state !== "results" || !room.lastResults) return;
+    room.priorVote = room.lastResults.summary;
+    room.revoting = true;
+    room.goTo(room.qIndex);
   });
 
   socket.on("host:pause", (paused) => {

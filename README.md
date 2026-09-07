@@ -49,7 +49,15 @@ Quiz-level fields:
 | `phoneText` | Mirror the question and choices onto phones, on by default. Set `false` for the classic projector-only look |
 
 Every question takes `text`, an optional `time` in seconds, and an optional `image`
-naming a file in `quizzes/images/` or an `http(s)` URL. The rest depends on `type`.
+naming a file in `quizzes/images/` or an `http(s)` URL. Two more are worth setting
+on anything you actually teach with:
+
+| Field | Meaning |
+| --- | --- |
+| `explanation` | Shown to everyone once the answer is revealed, and kept in the report. This is what turns a wrong answer into something learned, so `npm run check` warns when it is missing |
+| `discuss` | Marks a question as worth a peer-instruction round, highlighting the re-vote button on the host screen |
+
+The rest depends on `type`.
 
 ### Question types
 
@@ -130,6 +138,30 @@ a missing image, a slider answer outside its own range. Warnings are things that
 are legal but usually mistakes, such as a two second timer, a repeated question,
 or a class list with two students whose names cannot be told apart. The command
 exits non-zero if there are any errors, so it works in a pre-commit hook.
+
+## Teaching with it
+
+**Explanations.** Set `explanation` on a question and it appears on the host screen
+and on every phone the moment the answer is revealed, then again in the report.
+Students who got it wrong find out why while they still care.
+
+**Peer instruction.** After a question, the host screen offers "Discuss & re-vote"
+whenever the class was split, or always for a question marked `discuss`. It re-asks
+the same question, keeping the first vote, and the results then show both rounds
+side by side with a line reading how many were correct before and after. Scores
+come from the second vote, not both, so discussing cannot inflate anyone's total.
+
+**What people chose.** The report breaks every question down by the answer people
+actually picked, marks the correct one, and names the wrong answer the class landed
+on. A correct rate tells you a question was hard. The distractor tells you what they
+believe instead. A single stray pick is not called out, since one person is not a
+pattern.
+
+**Review quizzes.** "Make a review quiz" on a report writes a new quiz containing
+the questions that class did worst on, ordered worst first, with explanations kept.
+It lands in `quizzes/` and shows up in the host list, so the next lesson can open
+with spaced retrieval of exactly what was missed. Questions are matched back to the
+original file by their recorded position, so answer shuffling does not confuse it.
 
 ## Reports
 
