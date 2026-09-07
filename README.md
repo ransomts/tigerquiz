@@ -110,12 +110,19 @@ location = /quiz/api/nickname {
 An exact `=` match wins over a `^~` prefix, which is what lets the one public
 endpoint sit inside the protected tree.
 
-Two things this does not cover. Browsers hold basic-auth credentials until the
-window closes, so close the browser on a shared podium machine rather than the
-tab. And `host:create` arrives over the websocket, which is one endpoint shared
-by hosts and players and so cannot be split by path: a stranger can start a
-game of their own, though the host token still stops anyone touching a game
-already running.
+Creating a game arrives over the websocket, which is one endpoint shared by
+hosts and players, so a proxy cannot split it by path. Instead the host page
+first fetches a short-lived key from `/api/host-key` over ordinary HTTP, and
+passes it back when it creates the game. Protecting `/api/` therefore protects
+game creation too, with nothing extra to configure. Without a proxy in front,
+the endpoint is open and nothing changes.
+
+`MAX_ROOMS` caps how many games can be open at once, and `HOST_KEY_TTL_MS` how
+long a key stays valid.
+
+One thing none of this covers: browsers hold basic-auth credentials until the
+window closes, so close the browser on a shared podium machine rather than just
+the tab.
 
 ## Writing quizzes
 

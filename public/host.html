@@ -143,14 +143,27 @@ async function loadLists() {
 }
 loadLists();
 
+// creating a game needs a key fetched over HTTP, which a reverse proxy can put
+// behind a password; socket.io cannot be protected by path on its own
+let hostKey = null;
+async function withHostKey(fn) {
+  try {
+    if (!hostKey) hostKey = (await (await fetch("api/host-key")).json()).key;
+  } catch {
+    $("setupErr").textContent = "Could not start a game. Reload the page and sign in again.";
+    return;
+  }
+  fn(hostKey);
+}
+
 $("createBtn").onclick = () => {
   Sound.init(); // audio must be unlocked by a click
-  socket.emit("host:create", { quizId: $("quizSel").value, rosterId: $("rosterSel").value || null }, (res) => {
+  withHostKey((key) => socket.emit("host:create", { quizId: $("quizSel").value, rosterId: $("rosterSel").value || null, key }, (res) => {
     if (!res.ok) { $("setupErr").textContent = res.error; return; }
     adopt(res);
     renderPlayers([]);
     show("lobby");
-  });
+  }));
 };
 
 /** Take on a game, whether freshly created or resumed after a reload. */
@@ -249,13 +262,13 @@ $("newGameBtn").onclick = () => { clearSession(); location.reload(); };
 $("replayBtn").onclick = () => socket.emit("host:replay");
 $("rehearseBtn").onclick = () => {
   Sound.init();
-  socket.emit("host:create", { quizId: $("quizSel").value, rosterId: null }, (res) => {
+  withHostKey((key) => socket.emit("host:create", { quizId: $("quizSel").value, rosterId: null, key }, (res) => {
     if (!res.ok) { $("setupErr").textContent = res.error; return; }
     adopt(res);
     renderPlayers([]);
     show("lobby");
     socket.emit("host:start", { solo: true });
-  });
+  }));
 };
 
 // back to the lobby with the same people, scores cleared

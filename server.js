@@ -162,6 +162,36 @@ app.get("/api/students", (_req, res) => res.json(store.listStudents()));
 // the join screen offers players a name rather than letting them invent one
 app.get("/api/nickname", (_req, res) => res.json({ name: nick.suggest() }));
 
+/**
+ * Creating a game is the one privileged thing that happens over the websocket,
+ * and socket.io is a single endpoint shared with players, so a proxy cannot
+ * protect it by path the way it protects the rest of /api. Instead the host
+ * page fetches a short-lived key over HTTP first, which a proxy *can* put
+ * behind a password, and hands it back when it creates the game.
+ *
+ * With no proxy in front this changes nothing, exactly as before.
+ */
+const HOST_KEY_TTL_MS = Number(process.env.HOST_KEY_TTL_MS) || 12 * 60 * 60 * 1000;
+const MAX_ROOMS = Number(process.env.MAX_ROOMS) || 200;
+const hostKeys = new Map(); // key -> expiry
+
+function issueHostKey() {
+  const now = Date.now();
+  for (const [k, exp] of hostKeys) if (exp <= now) hostKeys.delete(k);
+  const key = randomUUID();
+  hostKeys.set(key, now + HOST_KEY_TTL_MS);
+  return key;
+}
+
+function hostKeyValid(key) {
+  const exp = hostKeys.get(key);
+  if (exp == null) return false;
+  if (exp <= Date.now()) { hostKeys.delete(key); return false; }
+  return true;
+}
+
+app.get("/api/host-key", (_req, res) => res.json({ key: issueHostKey() }));
+
 app.get("/api/reports/:id", async (req, res) => {
   const report = store.getReport(req.params.id);
   if (!report) return res.status(404).json({ error: "No such game" });
@@ -809,8 +839,11 @@ class Room {
 io.on("connection", (socket) => {
   socket.data.role = null;
 
-  socket.on("host:create", async ({ quizId, rosterId } = {}, cb = () => {}) => {
+  socket.on("host:create", async ({ quizId, rosterId, key } = {}, cb = () => {}) => {
     try {
+      if (!hostKeyValid(key)) throw new Error("Reload the host page before creating a game");
+      // an unbounded number of rooms is an unbounded amount of memory
+      if (rooms.size >= MAX_ROOMS) throw new Error("Too many games are open on this server");
       const quiz = prepareQuiz({ ...(await loadQuiz(quizId)), id: quizId });
       const roster = rosterId ? await loadRoster(rosterId) : null;
       const pin = makePin();

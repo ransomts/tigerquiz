@@ -27,7 +27,16 @@ function freePort() {
 const DATA = path.join(ROOT, "data", "test-run");
 
 const once = (s, ev) => new Promise((r) => s.once(ev, r));
-const emit = (s, ev, ...a) => new Promise((r) => s.emit(ev, ...a, r));
+// creating a game needs a key fetched over HTTP; the server hands one to anyone
+// who asks, and a reverse proxy is what puts a password in front of it
+let hostKey = null;
+const emit = async (s, ev, ...a) => {
+  if (ev === "host:create") {
+    hostKey ??= (await (await fetch(`${URL}/api/host-key`)).json()).key;
+    a[0] = { ...(a[0] || {}), key: hostKey };
+  }
+  return new Promise((r) => s.emit(ev, ...a, r));
+};
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const fail = [];
@@ -255,6 +264,13 @@ async function testValidation() {
   check("a missing quiz is refused", missing.ok === false);
   const traversal = await emit(host, "host:create", { quizId: "../server" });
   check("a path traversal id is refused", traversal.ok === false && /bad quiz id/.test(traversal.error), traversal.error);
+
+  // creating a game without a key must fail, or putting the key endpoint behind
+  // a password protects nothing. Emitted raw, since emit() attaches a key.
+  const noKey = await new Promise((r) => host.emit("host:create", { quizId: "sample" }, r));
+  check("a game cannot be created without a host key", noKey.ok === false, noKey.error);
+  const badKey = await new Promise((r) => host.emit("host:create", { quizId: "sample", key: "not-a-real-key" }, r));
+  check("a made up host key is refused", badKey.ok === false, badKey.error);
 
   const before = (await fetch(`${URL}/api/reports`).then((r) => r.json())).length;
   const game = await emit(host, "host:create", { quizId: "sample" });
