@@ -75,6 +75,7 @@ try {
   await testExplanationsAndRevote();
   await testDistractorsAndReview();
   await testEditorApi();
+  await testTiedScores();
   await testNicknamesAndRehearsal();
 } catch (e) {
   console.error("\nthrew:", e.message);
@@ -639,6 +640,54 @@ async function testEditorApi() {
   check("quizzes and class lists can be deleted", delQ.ok === true && delR.ok === true);
   const gone = await fetch(`${URL}/api/quiz/editor-test`);
   check("a deleted quiz is really gone", gone.status === 404);
+}
+
+async function testTiedScores() {
+  console.log("\n# ties share a rank");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quizId: "sample" });
+
+  // joined in this order on purpose: ranking by position would have handed out
+  // 1st, 2nd and 3rd in exactly this order regardless of how anyone played
+  const players = {};
+  for (const name of ["Ada", "Bea", "Cid", "Dev"]) {
+    const s = io(URL);
+    await once(s, "connect");
+    const r = await emit(s, "player:join", { pin: game.pin, name });
+    if (!r.ok) throw new Error(`${name} could not join: ${r.error}`);
+    players[name] = s;
+  }
+
+  const first = once(host, "game:question");
+  host.emit("host:start", {});
+  const q = await first;
+  const right = q.choices.indexOf("Central Processing Unit");
+  const wrong = q.choices.findIndex((_, i) => i !== right);
+
+  // one right, three wrong: a wrong answer always scores zero, so the losing
+  // three are exactly level however fast they were
+  const hostResults = once(host, "game:results");
+  const devResults = once(players.Dev, "game:results");
+  await emit(players.Ada, "player:answer", right);
+  for (const n of ["Bea", "Cid", "Dev"]) await emit(players[n], "player:answer", wrong);
+  const res = await hostResults;
+  const dev = await devResults;
+
+  const board = res.leaderboard;
+  const ranks = board.map((b) => b.rank);
+  check("the winner is first", board[0].name === "Ada" && board[0].rank === 1, JSON.stringify(board[0]));
+  check("players on the same score share a rank", ranks.join(",") === "1,2,2,2", ranks.join(","));
+  check("no third place is invented after a three-way tie", !ranks.includes(3), ranks.join(","));
+  check("the tied players really are level", new Set(board.slice(1).map((b) => b.score)).size === 1,
+    JSON.stringify(board.slice(1).map((b) => b.score)));
+  check("a tied player is told the rank they share", dev.rank === 2, String(dev.rank));
+  check("the gap is to someone actually ahead, not someone level",
+    dev.ahead?.name === "Ada" && dev.ahead.gap > 0, JSON.stringify(dev.ahead));
+
+  host.close();
+  for (const s of Object.values(players)) s.close();
+  await wait(100);
 }
 
 async function testNicknamesAndRehearsal() {

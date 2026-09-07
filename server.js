@@ -542,9 +542,19 @@ class Room {
   }
 
   leaderboard() {
+    // Standard competition ranking: equal scores share a rank and the next one
+    // skips, so three players tied on top are all 1st and the next is 4th.
+    // Ranking by position instead would have handed out 1st, 2nd and 3rd in
+    // the order people happened to join the lobby, since Map preserves
+    // insertion order and sort is stable.
+    let rank = 0;
+    let prev = null;
     return this.publicPlayers()
       .sort((a, b) => b.score - a.score)
-      .map((p, i) => ({ ...p, rank: i + 1 }));
+      .map((p, i) => {
+        if (p.score !== prev) { rank = i + 1; prev = p.score; }
+        return { ...p, rank };
+      });
   }
 
   startQuestion(index = this.qIndex + 1) {
@@ -722,7 +732,11 @@ class Room {
     for (const p of this.players.values()) {
       if (!p.socketId) continue;
       const idx = board.findIndex((b) => b.name === p.name);
-      const ahead = idx > 0 ? board[idx - 1] : null;
+      // the nearest player actually ahead, not merely listed above: anyone on
+      // the same score is level, and "0 points behind" is not a gap to close
+      let a = idx - 1;
+      while (a >= 0 && board[a].score === p.score) a--;
+      const ahead = a >= 0 ? board[a] : null;
       io.to(p.socketId).emit("game:results", {
         type: q.type,
         unscored,
@@ -732,14 +746,14 @@ class Room {
         bonus: p.last.bonus,
         streak: p.streak || 0,
         score: p.score,
-        rank: idx + 1,
-        prevRank: p.prevRank ?? idx + 1,
+        rank: board[idx].rank,
+        prevRank: p.prevRank ?? board[idx].rank,
         ahead: ahead ? { name: ahead.name, gap: ahead.score - p.score } : null,
         answer: answerView,
         explanation: q.explanation,
         answered: p.last.response != null,
       });
-      p.prevRank = idx + 1;
+      p.prevRank = board[idx].rank;
     }
   }
 
