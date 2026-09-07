@@ -10,6 +10,9 @@ npm install
 npm start          # http://localhost:3000
 ```
 
+[docs/teaching-with-tigerquiz.md](docs/teaching-with-tigerquiz.md) walks through
+one lesson from start to finish, with screenshots.
+
 - Host screen: `http://<your-ip>:3000/host.html`
 - Players: `http://<your-ip>:3000/` and enter the PIN (or `/?pin=123456`)
 - Editor: `http://<your-ip>:3000/edit.html`
