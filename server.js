@@ -2,12 +2,13 @@ import express from "express";
 import { createServer } from "node:http";
 import { Server } from "socket.io";
 import QRCode from "qrcode";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile, unlink } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as Q from "./lib/questions.js";
 import * as store from "./lib/db.js";
+import * as nick from "./lib/nicknames.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
@@ -20,11 +21,14 @@ const STREAK_BONUS_CAP = 500;
 const HOST_GRACE_MS = Number(process.env.HOST_GRACE_MS) || 3 * 60 * 1000;
 
 store.open(DATA_DIR);
+// optional extra blocked nicknames, one per line
+await nick.loadExtraWords(path.join(QUIZ_DIR, "blocked-words.txt"));
 
 const app = express();
 const http = createServer(app);
 const io = new Server(http);
 
+app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/quiz-images", express.static(IMAGE_DIR));
 
@@ -153,6 +157,11 @@ app.get("/api/qr.svg", async (req, res) => {
 
 app.get("/api/reports", (_req, res) => res.json(store.listGames()));
 
+app.get("/api/students", (_req, res) => res.json(store.listStudents()));
+
+// the join screen offers players a name rather than letting them invent one
+app.get("/api/nickname", (_req, res) => res.json({ name: nick.suggest() }));
+
 app.get("/api/reports/:id", async (req, res) => {
   const report = store.getReport(req.params.id);
   if (!report) return res.status(404).json({ error: "No such game" });
@@ -170,7 +179,7 @@ app.get("/api/reports/:id/csv", (req, res) => {
  * later lesson. Questions are looked up in the original quiz file by the source
  * index recorded at play time, so shuffling does not confuse the mapping.
  */
-app.post("/api/reports/:id/review-quiz", express.json(), async (req, res) => {
+app.post("/api/reports/:id/review-quiz", async (req, res) => {
   const report = store.getReport(req.params.id);
   if (!report) return res.status(404).json({ error: "No such game" });
   const threshold = clamp(Number(req.body?.threshold ?? 0.6), 0.05, 1);
@@ -297,6 +306,142 @@ function splitVote(summary, answerView) {
   return rate >= 0.3 && rate <= 0.8;
 }
 
+// ---------- quiz editing ----------
+const safeId = (id) => /^[\w-]{1,60}$/.test(id);
+const quizPath = (id) => path.join(QUIZ_DIR, `${id}.json`);
+const rosterPath = (id) => path.join(ROSTER_DIR, `${id}.json`);
+
+/** Read a quiz exactly as written, without normalising, so editing round-trips. */
+async function readRaw(file) {
+  return JSON.parse(await readFile(file, "utf8"));
+}
+
+/** Validate a quiz body the way a game would, and report every problem at once. */
+function validateQuiz(body) {
+  const problems = [];
+  if (!body || typeof body !== "object") return { problems: ["Not an object"] };
+  if (!String(body.title || "").trim()) problems.push("Give the quiz a title");
+  if (!Array.isArray(body.questions) || !body.questions.length) {
+    problems.push("Add at least one question");
+    return { problems };
+  }
+  const questions = [];
+  body.questions.forEach((q, i) => {
+    try {
+      questions.push(Q.normalizeQuestion(q, i));
+    } catch (e) {
+      problems.push(e.message);
+    }
+  });
+  return { problems, questions };
+}
+
+app.get("/api/quiz/:id", async (req, res) => {
+  if (!safeId(req.params.id)) return res.status(400).json({ error: "bad quiz id" });
+  try {
+    res.json(await readRaw(quizPath(req.params.id)));
+  } catch (e) {
+    res.status(e.code === "ENOENT" ? 404 : 500).json({ error: e.code === "ENOENT" ? "No such quiz" : e.message });
+  }
+});
+
+app.put("/api/quiz/:id", async (req, res) => {
+  const id = req.params.id;
+  if (!safeId(id)) return res.status(400).json({ error: "Use letters, digits, dash or underscore for the file name" });
+  const { problems } = validateQuiz(req.body);
+  if (problems.length) return res.status(400).json({ error: "Fix these first", problems });
+  try {
+    // only known fields are written, so a stray key cannot end up in the file
+    const clean = pickQuizFields(req.body);
+    await writeFile(quizPath(id), JSON.stringify(clean, null, 2) + "\n", "utf8");
+    res.json({ ok: true, id, count: clean.questions.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete("/api/quiz/:id", async (req, res) => {
+  if (!safeId(req.params.id)) return res.status(400).json({ error: "bad quiz id" });
+  try {
+    await unlink(quizPath(req.params.id));
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(e.code === "ENOENT" ? 404 : 500).json({ error: e.message });
+  }
+});
+
+/** Check a draft without saving it, so the editor can show problems as you type. */
+app.post("/api/quiz-check", (req, res) => {
+  const { problems, questions } = validateQuiz(req.body);
+  res.json({ ok: problems.length === 0, problems, count: questions ? questions.length : 0 });
+});
+
+const QUIZ_FIELDS = ["title", "note", "identifier", "shuffleQuestions", "shuffleAnswers", "phoneText"];
+const QUESTION_FIELDS = [
+  "type", "text", "image", "time", "explanation", "discuss",
+  "choices", "answer", "answers", "accept", "fuzzy",
+  "min", "max", "step", "tolerance", "unit", "items", "maxWords",
+];
+
+function pickQuizFields(body) {
+  const out = {};
+  for (const k of QUIZ_FIELDS) if (body[k] !== undefined && body[k] !== null && body[k] !== "") out[k] = body[k];
+  out.questions = body.questions.map((q) => {
+    const cleaned = {};
+    for (const k of QUESTION_FIELDS) {
+      const v = q[k];
+      if (v === undefined || v === null || v === "") continue;
+      if (Array.isArray(v) && !v.length) continue;
+      cleaned[k] = v;
+    }
+    return cleaned;
+  });
+  return out;
+}
+
+// ---------- roster editing ----------
+app.get("/api/roster/:id", async (req, res) => {
+  if (!safeId(req.params.id)) return res.status(400).json({ error: "bad roster id" });
+  try {
+    res.json(await readRaw(rosterPath(req.params.id)));
+  } catch (e) {
+    res.status(e.code === "ENOENT" ? 404 : 500).json({ error: e.code === "ENOENT" ? "No such class list" : e.message });
+  }
+});
+
+app.put("/api/roster/:id", async (req, res) => {
+  const id = req.params.id;
+  if (!safeId(id)) return res.status(400).json({ error: "Use letters, digits, dash or underscore for the file name" });
+  const body = req.body || {};
+  const students = (Array.isArray(body.students) ? body.students : [])
+    .map((s) => (typeof s === "string" ? { name: s } : s))
+    .filter((s) => s && String(s.name || "").trim())
+    .map((s) => (s.id ? { name: String(s.name).trim(), id: String(s.id).trim() } : { name: String(s.name).trim() }));
+  if (!students.length) return res.status(400).json({ error: "Add at least one student" });
+  try {
+    await mkdirIfNeeded(ROSTER_DIR);
+    await writeFile(rosterPath(id), JSON.stringify({ title: String(body.title || id), students }, null, 2) + "\n", "utf8");
+    res.json({ ok: true, id, count: students.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.delete("/api/roster/:id", async (req, res) => {
+  if (!safeId(req.params.id)) return res.status(400).json({ error: "bad roster id" });
+  try {
+    await unlink(rosterPath(req.params.id));
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(e.code === "ENOENT" ? 404 : 500).json({ error: e.message });
+  }
+});
+
+async function mkdirIfNeeded(dir) {
+  const { mkdir } = await import("node:fs/promises");
+  await mkdir(dir, { recursive: true });
+}
+
 // ---------- game state ----------
 /** @type {Map<string, Room>} */
 const rooms = new Map();
@@ -325,6 +470,7 @@ class Room {
     this.hostToken = randomUUID();
     this.hostGrace = null; // set while waiting for a dropped host to come back
     this.paused = false;
+    this.solo = false; // a rehearsal with no players, which produces no report
     this.pausedAt = 0;
     this.pausedMs = 0; // total time spent paused during the current question
     this.lastResults = null; // replayed to a host that reconnects mid-results
@@ -567,11 +713,47 @@ class Room {
     }
   }
 
+  /** Play the same quiz again with whoever is still here, scores back to zero. */
+  restart() {
+    clearTimeout(this.timer);
+    this.state = "lobby";
+    this.qIndex = -1;
+    this.answers.clear();
+    this.snapshots.clear();
+    this.lastResults = null;
+    this.lastEnd = null;
+    this.priorVote = null;
+    this.paused = false;
+    for (const p of this.players.values()) {
+      p.score = 0;
+      p.streak = 0;
+      p.prevRank = undefined;
+      p.last = undefined;
+    }
+    // a fresh game record, so the two runs are reported separately
+    this.id = randomUUID();
+    store.createGame({
+      id: this.id, pin: this.pin, quizId: this.quiz.id, title: this.quiz.title,
+      rosterId: this.roster?.id, startedAt: Date.now(),
+    });
+    for (const p of this.players.values()) store.upsertPlayer(this.id, p.name, p.identity);
+    io.to(this.hostRoom).emit("game:restarted", { players: this.publicPlayers() });
+    io.to(this.playerRoom).emit("game:restarted", {});
+    io.to(this.hostRoom).emit("lobby:players", this.publicPlayers());
+  }
+
   finish() {
     this.state = "end";
     this.paused = false;
     clearTimeout(this.timer);
     const board = this.leaderboard();
+    if (this.solo) {
+      // a rehearsal with no players is not worth a report
+      store.discardIfUnfinished(this.id);
+      this.lastEnd = { leaderboard: board, reportId: null, solo: true };
+      io.to(this.hostRoom).emit("game:end", this.lastEnd);
+      return;
+    }
     store.finishGame(this.id, Date.now(), this.quiz.questions.length, board);
     this.lastEnd = { leaderboard: board, reportId: this.id };
     io.to(this.hostRoom).emit("game:end", this.lastEnd);
@@ -653,11 +835,20 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("host:start", () => {
+  socket.on("host:start", ({ solo } = {}) => {
     const room = hostRoomFor(socket);
     if (!room || room.state !== "lobby") return;
-    if (room.players.size === 0) return socket.emit("game:error", "No players have joined yet");
+    // rehearsing alone is allowed, so a quiz can be checked before a lesson
+    if (room.players.size === 0 && !solo) return socket.emit("game:error", "No players have joined yet");
+    room.solo = !!solo && room.players.size === 0;
     room.startQuestion();
+  });
+
+  // run the same quiz again for the people already in the room
+  socket.on("host:replay", () => {
+    const room = hostRoomFor(socket);
+    if (!room || room.state !== "end") return;
+    room.restart();
   });
 
   socket.on("host:next", () => {
@@ -742,6 +933,7 @@ io.on("connection", (socket) => {
     identifier = String(identifier || "").trim().slice(0, 40);
     if (!room) return cb({ ok: false, error: "Game not found" });
     if (!name) return cb({ ok: false, error: "Enter a nickname" });
+    if (nick.isBlocked(name)) return cb({ ok: false, error: "Pick a different nickname" });
 
     let entry = null;
     if (room.roster) {

@@ -13,7 +13,10 @@
     <h1>tigerquiz</h1>
     <input id="pin" inputmode="numeric" pattern="[0-9]*" placeholder="Game PIN" maxlength="6" autocomplete="off">
     <div id="gameTitle" class="muted"></div>
-    <input id="name" placeholder="Nickname" maxlength="20" autocomplete="off">
+    <div class="namerow">
+      <input id="name" placeholder="Nickname" maxlength="20" autocomplete="off">
+      <button id="diceBtn" class="dice" title="Suggest a nickname">🎲</button>
+    </div>
     <input id="ident" placeholder="" maxlength="40" autocomplete="off" hidden>
     <button id="joinBtn" class="primary">Join</button>
     <div id="joinErr" class="error"></div>
@@ -125,6 +128,14 @@ function join() {
     }
   });
 }
+// offer a name rather than making everyone invent one
+$("diceBtn").onclick = async () => {
+  try {
+    const res = await fetch("/api/nickname").then((r) => r.json());
+    if (res.name) { $("name").value = res.name; $("joinErr").textContent = ""; }
+  } catch { /* offline; the player can type their own */ }
+};
+
 $("joinBtn").onclick = join;
 $("name").addEventListener("keydown", (e) => e.key === "Enter" && join());
 $("ident").addEventListener("keydown", (e) => e.key === "Enter" && join());
@@ -394,6 +405,14 @@ socket.on("game:end", (r) => {
   $("endRank").textContent = `#${r.rank} of ${r.players}`;
   $("endScore").textContent = `${r.score} points`;
   show("end");
+});
+
+socket.on("game:restarted", () => {
+  clearInterval(timerHandle);
+  paused = false;
+  renderPaused();
+  $("status").textContent = "";
+  if (me) show("wait");
 });
 
 socket.on("game:closed", () => { $("status").textContent = "Host ended the game"; show("join"); });

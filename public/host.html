@@ -16,7 +16,8 @@
     <select id="rosterSel"></select>
     <button id="createBtn" class="primary">Create game</button>
     <div id="setupErr" class="error"></div>
-    <p class="muted"><a href="reports.html">View past game reports</a></p>
+    <button id="rehearseBtn" class="linkbtn">Rehearse this quiz alone</button>
+    <p class="muted"><a href="edit.html">Edit quizzes</a> · <a href="reports.html">Past game reports</a></p>
   </section>
 
   <section id="lobby" class="screen center">
@@ -29,8 +30,10 @@
       </div>
     </div>
     <p id="rosterNote" class="muted" hidden></p>
+    <p id="addrWarn" class="error" hidden></p>
     <div id="players" class="chips"></div>
     <p class="muted"><span id="playerCount">0</span> players · click a name to remove</p>
+    <p class="muted small">Sound starts once you click Start.</p>
     <button id="startBtn" class="primary" disabled>Start</button>
   </section>
 
@@ -73,6 +76,7 @@
     <div id="podium" class="podium"></div>
     <ol id="finalBoard" class="board"></ol>
     <div class="row">
+      <button id="replayBtn" class="primary">Play again, same players</button>
       <button id="newGameBtn">New game</button>
       <a id="reportLink" class="btnlink" href="#">See the report</a>
     </div>
@@ -159,6 +163,12 @@ function adopt(res) {
   $("joinUrl").textContent = `${location.host}`;
   $("hostPin").textContent = `PIN ${pin}`;
   $("qr").src = `/api/qr.svg?text=${encodeURIComponent(`${location.origin}/?pin=${pin}`)}`;
+  // students cannot reach "localhost"; tell the host before the lesson, not during it
+  const local = /^(localhost|127\.|\[?::1)/i.test(location.hostname);
+  const warn = $("addrWarn");
+  warn.hidden = !local;
+  if (local) warn.textContent = "Students cannot reach this address. Reopen this page using this machine's network name or IP so the code and link work.";
+
   const note = $("rosterNote");
   note.hidden = !(res.roster || res.identifier);
   if (res.roster) note.textContent = `Players must be on the class list "${res.roster.title}" (${res.roster.count} students).`;
@@ -226,7 +236,7 @@ function renderPlayers(players) {
 }
 socket.on("lobby:players", renderPlayers);
 
-$("startBtn").onclick = () => socket.emit("host:start");
+$("startBtn").onclick = () => socket.emit("host:start", {});
 $("nextBtn").onclick = () => socket.emit("host:next");
 $("skipBtn").onclick = () => socket.emit("host:skip");
 $("prevBtn").onclick = () => socket.emit("host:prev");
@@ -234,6 +244,26 @@ $("rPrevBtn").onclick = () => socket.emit("host:prev");
 $("revoteBtn").onclick = () => socket.emit("host:revote");
 $("pauseBtn").onclick = () => socket.emit("host:pause", !paused);
 $("newGameBtn").onclick = () => { clearSession(); location.reload(); };
+$("replayBtn").onclick = () => socket.emit("host:replay");
+$("rehearseBtn").onclick = () => {
+  Sound.init();
+  socket.emit("host:create", { quizId: $("quizSel").value, rosterId: null }, (res) => {
+    if (!res.ok) { $("setupErr").textContent = res.error; return; }
+    adopt(res);
+    renderPlayers([]);
+    show("lobby");
+    socket.emit("host:start", { solo: true });
+  });
+};
+
+// back to the lobby with the same people, scores cleared
+socket.on("game:restarted", () => {
+  phase = "lobby";
+  paused = false;
+  renderPaused();
+  clearInterval(timerHandle);
+  show("lobby");
+});
 
 function renderPaused() {
   $("pausedBanner").hidden = !paused;
@@ -512,7 +542,9 @@ socket.on("game:end", (r) => {
   renderPaused();
   clearSession(); // the game is over; nothing left to resume
   renderBoard($("finalBoard"), r.leaderboard);
-  $("reportLink").href = `reports.html#${r.reportId}`;
+  $("reportLink").href = r.reportId ? `reports.html#${r.reportId}` : "reports.html";
+  $("reportLink").hidden = !r.reportId;
+  $("replayBtn").hidden = !r.leaderboard.length;
   show("end");
   runPodium(r.leaderboard);
 });

@@ -2,14 +2,28 @@
 //   npm test
 // Covers every question type, scoring, streaks, class lists and reporting.
 import { spawn } from "node:child_process";
+import { createServer } from "node:http";
 import { rm } from "node:fs/promises";
 import { io } from "socket.io-client";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const PORT = process.env.TEST_PORT || 3111;
+// pick a port the operating system says is free, so a stale process from an
+// interrupted run cannot make the whole suite fail to start
+const PORT = process.env.TEST_PORT || (await freePort());
 const URL = `http://localhost:${PORT}`;
+
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.on("error", reject);
+    probe.listen(0, () => {
+      const { port } = probe.address();
+      probe.close(() => resolve(port));
+    });
+  });
+}
 const DATA = path.join(ROOT, "data", "test-run");
 
 const once = (s, ev) => new Promise((r) => s.once(ev, r));
@@ -34,11 +48,13 @@ const server = spawn(process.execPath, ["--disable-warning=ExperimentalWarning",
 });
 server.stderr.on("data", (d) => process.stderr.write(`[server] ${d}`));
 await new Promise((resolve, reject) => {
-  const timer = setTimeout(() => reject(new Error("server did not start")), 15000);
+  const timer = setTimeout(() => reject(new Error("server did not start within 15s")), 15000);
   server.stdout.on("data", (d) => {
     if (String(d).includes("listening")) { clearTimeout(timer); resolve(); }
   });
+  server.on("exit", (code) => { clearTimeout(timer); reject(new Error(`server exited with code ${code} before starting`)); });
 });
+console.log(`server on port ${PORT}`);
 
 try {
   await testQuestionTypes();
@@ -49,6 +65,8 @@ try {
   await testPhoneText();
   await testExplanationsAndRevote();
   await testDistractorsAndReview();
+  await testEditorApi();
+  await testNicknamesAndRehearsal();
 } catch (e) {
   console.error("\nthrew:", e.message);
   fail.push(e.message);
@@ -534,4 +552,153 @@ async function testDistractorsAndReview() {
   for (const s of players) s.close();
   host.close();
   await wait(50);
+}
+
+
+async function testEditorApi() {
+  console.log("\n# quiz editor api");
+  const put = (id, body) => fetch(`${URL}/api/quiz/${id}`, {
+    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  }).then((r) => r.json());
+
+  const draft = {
+    title: "Editor Test",
+    phoneText: true,
+    questions: [
+      { type: "choice", text: "Pick one", choices: ["a", "b"], answer: 1, time: 15, explanation: "because b" },
+      { type: "truefalse", text: "Water is wet", answer: 0 },
+    ],
+  };
+
+  const bad = await put("editor-test", { title: "", questions: [{ text: "no choices" }] });
+  check("an invalid quiz is refused with reasons", bad.error && Array.isArray(bad.problems) && bad.problems.length >= 2,
+    JSON.stringify(bad.problems));
+
+  // encoded, so fetch does not normalise the traversal away before it is sent
+  const badId = await put(encodeURIComponent("../escape"), draft);
+  check("a traversing file name is refused", !!badId.error, badId.error);
+  const spaced = await put(encodeURIComponent("has spaces!"), draft);
+  check("a file name with punctuation is refused", !!spaced.error, spaced.error);
+
+  const saved = await put("editor-test", draft);
+  check("a valid quiz saves", saved.ok === true && saved.count === 2, saved.error);
+
+  const back = await fetch(`${URL}/api/quiz/editor-test`).then((r) => r.json());
+  check("the quiz reads back unchanged", back.title === "Editor Test" && back.questions.length === 2);
+  check("empty fields are not written to the file", back.questions[1].explanation === undefined,
+    JSON.stringify(back.questions[1]));
+  check("stray fields are stripped", !("bogus" in back));
+
+  const withStray = await put("editor-test", { ...draft, bogus: "nope" });
+  check("saving with a stray field still succeeds", withStray.ok === true);
+  const back2 = await fetch(`${URL}/api/quiz/editor-test`).then((r) => r.json());
+  check("the stray field did not reach the file", back2.bogus === undefined);
+
+  const listed = await fetch(`${URL}/api/quizzes`).then((r) => r.json());
+  check("the saved quiz appears in the list", listed.some((q) => q.id === "editor-test"));
+  const playable = await (async () => {
+    const h = io(URL); await once(h, "connect");
+    const g = await emit(h, "host:create", { quizId: "editor-test" });
+    h.close();
+    return g;
+  })();
+  check("a quiz written by the editor is playable", playable.ok === true, playable.error);
+
+  const draftCheck = await fetch(`${URL}/api/quiz-check`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "x", questions: [{ text: "q", choices: ["a"], answer: 0 }] }),
+  }).then((r) => r.json());
+  check("a draft can be checked without saving", draftCheck.ok === false && draftCheck.problems.length === 1,
+    JSON.stringify(draftCheck.problems));
+
+  // class lists
+  const roster = await fetch(`${URL}/api/roster/editor-class`, {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "Editor Class", students: [{ name: "Ada", id: "1" }, { name: "Bob" }, { name: "  " }] }),
+  }).then((r) => r.json());
+  check("a class list saves and drops blank rows", roster.ok === true && roster.count === 2, JSON.stringify(roster));
+
+  const delQ = await fetch(`${URL}/api/quiz/editor-test`, { method: "DELETE" }).then((r) => r.json());
+  const delR = await fetch(`${URL}/api/roster/editor-class`, { method: "DELETE" }).then((r) => r.json());
+  check("quizzes and class lists can be deleted", delQ.ok === true && delR.ok === true);
+  const gone = await fetch(`${URL}/api/quiz/editor-test`);
+  check("a deleted quiz is really gone", gone.status === 404);
+}
+
+async function testNicknamesAndRehearsal() {
+  console.log("\n# nicknames, rehearsal and replay");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quizId: "sample" });
+
+  const s = io(URL);
+  await once(s, "connect");
+  const rude = await emit(s, "player:join", { pin: game.pin, name: "sh1thead" });
+  check("a rude nickname is refused", rude.ok === false && /different nickname/i.test(rude.error), rude.error);
+  const disguised = await emit(s, "player:join", { pin: game.pin, name: "A$$ Face" });
+  check("a disguised one is refused too", disguised.ok === false, disguised.error);
+  const fine = await emit(s, "player:join", { pin: game.pin, name: "Cassidy" });
+  check("an ordinary name containing a blocked run is allowed", fine.ok === true, fine.error);
+
+  const suggested = await fetch(`${URL}/api/nickname`).then((r) => r.json());
+  check("a nickname can be suggested", typeof suggested.name === "string" && suggested.name.length > 3, suggested.name);
+
+  // play through, then replay with the same player
+  let nextQ = once(host, "game:question");
+  host.emit("host:start", {});
+  for (let i = 0; i < 4; i++) {
+    await nextQ;
+    nextQ = once(host, "game:question");
+    const got = once(host, "game:results");
+    await emit(s, "player:answer", 0);
+    await got;
+    await wait(20);
+    host.emit("host:next");
+  }
+  const end = await once(host, "game:end");
+  check("the game finished with a score", end.leaderboard[0].score >= 0);
+
+  const restarted = once(host, "game:restarted");
+  const playerRestart = once(s, "game:restarted");
+  host.emit("host:replay");
+  const again = await restarted;
+  await playerRestart;
+  check("replaying keeps the players", again.players.length === 1 && again.players[0].name === "Cassidy",
+    JSON.stringify(again.players));
+  check("replaying clears the scores", again.players[0].score === 0);
+
+  const before = (await fetch(`${URL}/api/reports`).then((r) => r.json())).length;
+  s.close();
+  host.close();
+  await wait(100);
+
+  // rehearsing alone leaves no report behind
+  const solo = io(URL);
+  await once(solo, "connect");
+  await emit(solo, "host:create", { quizId: "sample" });
+  // the end fires during the loop below, so arm the listener before starting
+  const soloEnded = once(solo, "game:end");
+  const soloQ = once(solo, "game:question");
+  solo.emit("host:start", { solo: true });
+  await soloQ;
+  for (let i = 0; i < 4; i++) {
+    solo.emit("host:skip");
+    await wait(60);
+    solo.emit("host:next");
+    await wait(60);
+  }
+  const soloEnd = await soloEnded;
+  check("a rehearsal reaches the end", !!soloEnd);
+  check("a rehearsal produces no report", soloEnd.reportId === null, String(soloEnd.reportId));
+  await wait(100);
+  const after = (await fetch(`${URL}/api/reports`).then((r) => r.json())).length;
+  check("the report list is unchanged by a rehearsal", after === before, `${before} then ${after}`);
+  solo.close();
+
+  // cross-game student history
+  const students = await fetch(`${URL}/api/students`).then((r) => r.json());
+  check("students are listed across games", Array.isArray(students) && students.length > 0, String(students.length));
+  const anyone = students[0];
+  check("each student carries their game history", Array.isArray(anyone.games) && anyone.games.length > 0);
+  check("each student has a correct rate", anyone.correctRate === null || (anyone.correctRate >= 0 && anyone.correctRate <= 1));
 }

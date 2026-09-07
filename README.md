@@ -12,7 +12,12 @@ npm start          # http://localhost:3000
 
 - Host screen: `http://<your-ip>:3000/host.html`
 - Players: `http://<your-ip>:3000/` and enter the PIN (or `/?pin=123456`)
+- Editor: `http://<your-ip>:3000/edit.html`
 - Reports: `http://<your-ip>:3000/reports.html`
+
+Open the host screen by network name or IP, not `localhost`. The PIN and QR code
+that students see are built from the address in your browser bar, so a localhost
+address gives them a link they cannot reach. The lobby warns you when it spots this.
 
 Set `PORT` to change the port. Everyone must be able to reach the host machine on that
 port (same Wi-Fi, or put it behind a reverse proxy).
@@ -24,7 +29,24 @@ npm run check      # validate every quiz and class list before a lesson
 
 ## Writing quizzes
 
-Drop a JSON file in `quizzes/`. The filename becomes the quiz id.
+The easiest way is the editor at `/edit.html`. It lists your quizzes and class
+lists, edits every question type with the right fields for each, checks your work
+as you type, and saves back to `quizzes/`. It can also import questions you already
+have, either as pasted text or as CSV:
+
+```
+Which planet is red?
+- Venus
+* Mars
+- Jupiter
+```
+
+Blank lines separate questions and `*` marks the correct answer. Prefix a line with
+`T/F` for a true or false question. The CSV form takes a `question` column, up to
+four `choice` columns, and an `answer` column numbered from one.
+
+Everything below describes the file format, which you only need if you would rather
+write it by hand. Drop a JSON file in `quizzes/`. The filename becomes the quiz id.
 
 ```json
 {
@@ -80,7 +102,7 @@ question is reported on the host screen instead of failing mid-game.
 
 ## Class lists
 
-Put a roster in `quizzes/rosters/`:
+Use the editor, or put a roster in `quizzes/rosters/` by hand:
 
 ```json
 {
@@ -157,11 +179,27 @@ on. A correct rate tells you a question was hard. The distractor tells you what 
 believe instead. A single stray pick is not called out, since one person is not a
 pattern.
 
+**Rehearsing.** "Rehearse this quiz alone" on the setup screen runs a quiz with no
+players, so you can check it before a lesson. Rehearsals produce no report.
+
+**Playing again.** After the final standings, "Play again, same players" restarts the
+same quiz with everyone still in the room and scores back to zero. It is recorded as a
+separate game.
+
 **Review quizzes.** "Make a review quiz" on a report writes a new quiz containing
 the questions that class did worst on, ordered worst first, with explanations kept.
 It lands in `quizzes/` and shows up in the host list, so the next lesson can open
 with spaced retrieval of exactly what was missed. Questions are matched back to the
 original file by their recorded position, so answer shuffling does not confuse it.
+
+## Nicknames
+
+Nicknames are screened against a word list before anyone joins. Disguises are
+collapsed first, so `sh1t` and `a$$` are caught, and ordinary words that happen to
+contain a blocked run are allowed, so `Cassidy`, `classic` and `Scunthorpe` all get
+through. Players can press the dice button for a suggested name instead of inventing
+one. No list is complete, so the host can still remove anyone from the lobby with a
+click. Add your own words, one per line, in `quizzes/blocked-words.txt`.
 
 ## Reports
 

@@ -10,12 +10,30 @@
 <main class="doc-main">
   <header class="doc-head">
     <h1>Game reports</h1>
-    <a class="btnlink" href="host.html">Host a game</a>
+    <div class="row">
+      <a class="btnlink" href="edit.html">Edit quizzes</a>
+      <a class="btnlink" href="host.html">Host a game</a>
+    </div>
   </header>
 
   <section id="listView">
-    <div id="gameList" class="cardlist"></div>
-    <p id="empty" class="muted" hidden>No finished games yet. Reports appear here once a game reaches the final standings.</p>
+    <div class="row tabs">
+      <button id="tabGames" class="tab active">Games</button>
+      <button id="tabStudents" class="tab">Students</button>
+    </div>
+
+    <div id="gamesPane">
+      <input id="gameSearch" class="search" placeholder="Search games by name" autocomplete="off">
+      <div id="gameList" class="cardlist"></div>
+      <p id="empty" class="muted" hidden>No finished games yet. Reports appear here once a game reaches the final standings.</p>
+    </div>
+
+    <div id="studentsPane" hidden>
+      <input id="studentSearch" class="search" placeholder="Search students" autocomplete="off">
+      <div class="tablewrap"><table id="studentTable"></table></div>
+      <p id="noStudents" class="muted" hidden>Nobody has played a finished game yet.</p>
+      <div id="studentDetail"></div>
+    </div>
   </section>
 
   <section id="detailView" hidden>
@@ -56,13 +74,24 @@ const fmtDate = (ms) => new Date(ms).toLocaleString(undefined, { dateStyle: "med
 const pct = (r) => (r == null ? "—" : `${Math.round(r * 100)}%`);
 
 // ---------- list ----------
+let allGames = [];
+let allStudents = [];
+
 async function showList() {
   $("detailView").hidden = true;
   $("listView").hidden = false;
-  const games = await fetch("/api/reports").then((r) => r.json());
+  allGames = await fetch("/api/reports").then((r) => r.json());
+  $("empty").hidden = allGames.length > 0;
+  drawGames();
+  if (!$("studentsPane").hidden) loadStudents();
+}
+
+function drawGames() {
+  const needle = $("gameSearch").value.trim().toLowerCase();
+  const games = needle ? allGames.filter((g) => g.title.toLowerCase().includes(needle)) : allGames;
   const box = $("gameList");
   box.innerHTML = "";
-  $("empty").hidden = games.length > 0;
+  if (!games.length && allGames.length) box.appendChild(el("p", "muted", "No games match that search."));
   for (const g of games) {
     const a = el("a", "card");
     a.href = `#${g.id}`;
@@ -72,6 +101,66 @@ async function showList() {
     );
     box.appendChild(a);
   }
+}
+$("gameSearch").oninput = drawGames;
+$("gameSearch").hidden = false;
+
+// ---------- students across games ----------
+$("tabGames").onclick = () => switchTab("games");
+$("tabStudents").onclick = () => switchTab("students");
+function switchTab(which) {
+  const students = which === "students";
+  $("tabGames").classList.toggle("active", !students);
+  $("tabStudents").classList.toggle("active", students);
+  $("gamesPane").hidden = students;
+  $("studentsPane").hidden = !students;
+  if (students && !allStudents.length) loadStudents();
+}
+
+async function loadStudents() {
+  allStudents = await fetch("/api/students").then((r) => r.json());
+  $("noStudents").hidden = allStudents.length > 0;
+  drawStudents();
+}
+
+function drawStudents() {
+  const needle = $("studentSearch").value.trim().toLowerCase();
+  const rows = needle
+    ? allStudents.filter((s) => s.who.toLowerCase().includes(needle) || s.nicknames.some((n) => n.toLowerCase().includes(needle)))
+    : allStudents;
+  buildTable($("studentTable"),
+    ["Student", "Games", "Correct", "Rate", "Last played"],
+    rows.map((s) => [s.who, s.gamesPlayed, `${s.correct}/${s.scored}`, pct(s.correctRate), fmtDate(s.lastPlayed)]));
+  // clicking a row opens that student's history
+  [...$("studentTable").querySelectorAll("tbody tr")].forEach((tr, i) => {
+    tr.classList.add("clickable");
+    tr.onclick = () => showStudent(rows[i]);
+  });
+  $("studentDetail").innerHTML = "";
+}
+$("studentSearch").oninput = drawStudents;
+
+function showStudent(s) {
+  const box = $("studentDetail");
+  box.innerHTML = "";
+  const card = el("div", "callout");
+  card.appendChild(el("h3", null, s.who));
+  if (s.nicknames.length > 1 || s.nicknames[0] !== s.who)
+    card.appendChild(el("p", "muted", `Played as: ${s.nicknames.join(", ")}`));
+  const list = el("div", "cardlist");
+  for (const g of [...s.games].sort((a, b) => b.startedAt - a.startedAt)) {
+    const a = el("a", "card");
+    a.href = `#${g.gameId}`;
+    a.append(
+      el("div", "card-title", g.title),
+      el("div", "card-meta",
+        `${fmtDate(g.startedAt)} · ${g.scored ? `${g.correct}/${g.scored} correct` : "no scored questions"} · ${g.score} points${g.rank ? ` · rank ${g.rank}` : ""}`)
+    );
+    list.appendChild(a);
+  }
+  card.appendChild(list);
+  box.appendChild(card);
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 // ---------- detail ----------
