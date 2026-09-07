@@ -534,7 +534,7 @@ class Room {
     clearTimeout(this.timer);
     const q = this.question;
     if (!q || !q.time || this.paused || this.state !== "question") return;
-    this.timer = setTimeout(() => this.endQuestion(), this.remainingMs + 250);
+    this.timer = setTimeout(() => this.endQuestion("time"), this.remainingMs + 250);
   }
 
   publicPlayers() {
@@ -655,11 +655,12 @@ class Room {
     this.answers.set(name, { response: value, ms: Date.now() - this.questionStart - this.pausedMs });
     io.to(this.hostRoom).emit("game:answered", { answered: this.answers.size, players: this.players.size });
     const connected = [...this.players.values()].filter((p) => p.connected).length;
-    if (this.answers.size >= connected) this.endQuestion();
+    if (this.answers.size >= connected) this.endQuestion("everyone");
     return { ok: true };
   }
 
-  endQuestion() {
+  // "time" the clock ran out, "host" the host moved on, "everyone" all answered
+  endQuestion(endedBy = "time") {
     if (this.state !== "question") return;
     clearTimeout(this.timer);
     this.paused = false;
@@ -737,6 +738,7 @@ class Room {
       let a = idx - 1;
       while (a >= 0 && board[a].score === p.score) a--;
       const ahead = a >= 0 ? board[a] : null;
+      const level = board.filter((b) => b.score === p.score && b.name !== p.name);
       io.to(p.socketId).emit("game:results", {
         type: q.type,
         unscored,
@@ -750,8 +752,16 @@ class Room {
         prevRank: p.prevRank ?? board[idx].rank,
         ahead: ahead ? { name: ahead.name, gap: ahead.score - p.score } : null,
         answer: answerView,
+        // read the player's own answer back to them: without it the phone shows
+        // the right answer with no reminder of what they actually picked, and
+        // quizzes with phoneText off never showed them the question either
+        yourAnswer: Q.responseLabel(q, p.last.response, this.pres),
         explanation: q.explanation,
         answered: p.last.response != null,
+        // being level with someone is worth knowing, and the gap above cannot
+        // say so any more now that it skips players on the same score
+        levelWith: level.map((b) => b.name),
+        endedBy,
       });
       p.prevRank = board[idx].rank;
     }
@@ -962,7 +972,7 @@ io.on("connection", (socket) => {
     const room = hostRoomFor(socket);
     if (!room) return;
     if (room.state === "question" && !Q.isAnswerable(room.question.type)) return room.startQuestion();
-    room.endQuestion();
+    room.endQuestion("host");
   });
 
   socket.on("host:kick", (name) => {

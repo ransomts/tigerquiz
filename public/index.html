@@ -47,6 +47,7 @@
       <div id="resultTitle" class="big"></div>
       <div id="resultStreak" class="streak" hidden></div>
       <div id="resultPts" style="font-size:1.5rem"></div>
+      <div id="resultAnswer" class="answerline"></div>
       <div id="resultRank" class="rankline"></div>
       <div id="resultGap" class="muted"></div>
       <p id="resultExplain" class="explain" hidden></p>
@@ -371,17 +372,28 @@ socket.on("game:results", (r) => {
   const box = $("resultBox");
   const partial = r.ratio > 0 && r.correct !== true;
 
+  const answerLine = $("resultAnswer");
+  answerLine.textContent = "";
+
   if (r.unscored) {
     box.className = "fill result-neutral";
     $("resultTitle").textContent = r.answered ? "Thanks!" : "No answer";
     $("resultPts").textContent = r.answered ? "Your response is on the host screen" : "";
+    if (r.yourAnswer) answerLine.textContent = `You said ${r.yourAnswer}`;
   } else {
     box.className = "fill " + (r.correct ? "result-ok" : partial ? "result-part" : "result-bad");
-    $("resultTitle").textContent = r.correct ? "Correct!" : partial ? "Close!" : !r.answered ? "Too slow!" : "Wrong";
+    // not answering is not the same as being slow: the host can end a question
+    // while somebody is still thinking, and blaming them for that is unfair
+    const noAnswer = r.endedBy === "host" ? "No answer" : "Time's up";
+    $("resultTitle").textContent = r.correct ? "Correct!" : partial ? "Close!" : !r.answered ? noAnswer : "Wrong";
     const total = r.gained + (r.bonus || 0);
-    $("resultPts").textContent = total > 0
-      ? `+${total} points`
-      : r.answer ? `The answer was ${r.answer.label}` : "";
+    $("resultPts").textContent = total > 0 ? `+${total} points` : "";
+    // always both halves: the right answer alone leaves them guessing what they
+    // picked, and with phoneText off they never saw the question either
+    const lines = [];
+    if (r.yourAnswer) lines.push(`You said ${r.yourAnswer}`);
+    if (r.answer && !r.correct) lines.push(`The answer was ${r.answer.label}`);
+    answerLine.textContent = lines.join(" · ");
   }
 
   const streak = $("resultStreak");
@@ -395,11 +407,15 @@ socket.on("game:results", (r) => {
   ex.hidden = !r.explanation;
   ex.textContent = r.explanation || "";
 
-  $("resultGap").textContent = !r.ahead
-    ? (r.rank === 1 ? "You're in the lead!" : "")
-    : r.ahead.gap === 0
-      ? `Tied with ${r.ahead.name}`
-      : `${r.ahead.gap} points behind ${r.ahead.name}`;
+  // being level is reported here rather than in the gap, which now always
+  // points at somebody genuinely ahead
+  const level = r.levelWith || [];
+  const bits = [];
+  if (level.length === 1) bits.push(`Level with ${level[0]}`);
+  else if (level.length > 1) bits.push(`Level with ${level.length} others`);
+  if (r.ahead) bits.push(`${r.ahead.gap} pts behind ${r.ahead.name}`);
+  else if (!bits.length && r.rank === 1) bits.push(r.score > 0 ? "You're in the lead!" : "Nobody has scored yet");
+  $("resultGap").textContent = bits.join(" · ");
   show("result");
 });
 

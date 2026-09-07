@@ -684,6 +684,24 @@ async function testTiedScores() {
   check("a tied player is told the rank they share", dev.rank === 2, String(dev.rank));
   check("the gap is to someone actually ahead, not someone level",
     dev.ahead?.name === "Ada" && dev.ahead.gap > 0, JSON.stringify(dev.ahead));
+  check("a player is told who they are level with",
+    Array.isArray(dev.levelWith) && dev.levelWith.sort().join(",") === "Bea,Cid", JSON.stringify(dev.levelWith));
+  check("a player is told what they themselves answered", typeof dev.yourAnswer === "string" && dev.yourAnswer.length > 0,
+    JSON.stringify(dev.yourAnswer));
+  check("a question everyone answered is reported as such", dev.endedBy === "everyone", dev.endedBy);
+
+  // the host cutting a question short must not be reported to the student as
+  // being too slow, so the reason has to reach the phone
+  host.emit("host:next");
+  await once(host, "game:question");
+  const skipped = once(players.Dev, "game:results");
+  await emit(players.Ada, "player:answer", 0);
+  await wait(50);
+  host.emit("host:skip");
+  const cut = await skipped;
+  check("a question the host ended is marked as ended by the host", cut.endedBy === "host", cut.endedBy);
+  check("someone who did not answer is recorded as not having answered", cut.answered === false, String(cut.answered));
+  check("with no answer there is nothing to read back", cut.yourAnswer == null, JSON.stringify(cut.yourAnswer));
 
   host.close();
   for (const s of Object.values(players)) s.close();
