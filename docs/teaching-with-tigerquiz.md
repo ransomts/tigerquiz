@@ -103,8 +103,8 @@ were right before and after.
 ![The final standings, revealed as a podium](images/07-podium.png)
 
 Places are revealed lowest first. Anyone level on points shares a place and is
-revealed together — three players tied on 3731 above are all first, and the next
-player is fourth, not second. Nobody is quietly put ahead of somebody they drew
+revealed together: Ada and Alan tied on 3732 above are both first, so Grace is
+third rather than second. Nobody is quietly ranked above someone they drew
 with.
 
 From here you can play the same quiz again with everyone still in the room, or
