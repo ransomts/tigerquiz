@@ -1,0 +1,32 @@
+{
+  "title": "Feature Demo",
+  "shuffleQuestions": false,
+  "shuffleAnswers": true,
+  "questions": [
+    {
+      "text": "Which planet is known as the Red Planet?",
+      "choices": ["Venus", "Mars", "Jupiter", "Mercury"],
+      "answer": 1,
+      "time": 20
+    },
+    {
+      "type": "truefalse",
+      "text": "The Pacific is the largest ocean on Earth.",
+      "answer": true,
+      "time": 10
+    },
+    {
+      "text": "What shape is shown?",
+      "image": "shape.svg",
+      "choices": ["Triangle", "Square", "Circle", "Hexagon"],
+      "answer": 2,
+      "time": 15
+    },
+    {
+      "type": "truefalse",
+      "text": "Binary search runs in O(n) time.",
+      "answer": false,
+      "time": 10
+    }
+  ]
+}

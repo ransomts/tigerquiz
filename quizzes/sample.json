@@ -1,0 +1,29 @@
+{
+  "title": "Sample Quiz",
+  "questions": [
+    {
+      "text": "What does CPU stand for?",
+      "choices": ["Central Processing Unit", "Computer Personal Unit", "Central Program Utility", "Core Power Unit"],
+      "answer": 0,
+      "time": 20
+    },
+    {
+      "text": "Which of these is NOT a programming language?",
+      "choices": ["Python", "Rust", "Cobra", "HTML"],
+      "answer": 3,
+      "time": 20
+    },
+    {
+      "text": "What is 0b1010 in decimal?",
+      "choices": ["8", "10", "12", "20"],
+      "answer": 1,
+      "time": 15
+    },
+    {
+      "text": "Big-O of binary search on a sorted array?",
+      "choices": ["O(n)", "O(n log n)", "O(log n)", "O(1)"],
+      "answer": 2,
+      "time": 20
+    }
+  ]
+}

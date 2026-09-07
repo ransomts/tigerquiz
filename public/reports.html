@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tigerquiz · reports</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="doc">
+<main class="doc-main">
+  <header class="doc-head">
+    <h1>Game reports</h1>
+    <a class="btnlink" href="host.html">Host a game</a>
+  </header>
+
+  <section id="listView">
+    <div id="gameList" class="cardlist"></div>
+    <p id="empty" class="muted" hidden>No finished games yet. Reports appear here once a game reaches the final standings.</p>
+  </section>
+
+  <section id="detailView" hidden>
+    <p><a href="#" id="backLink">← All reports</a></p>
+    <div class="doc-head">
+      <div>
+        <h2 id="dTitle"></h2>
+        <p class="muted" id="dWhen"></p>
+      </div>
+      <div class="row">
+        <a id="csvLink" class="btnlink" href="#">Download CSV</a>
+        <button id="delBtn">Delete</button>
+      </div>
+    </div>
+
+    <div id="dStats" class="statrow"></div>
+    <div id="dReview"></div>
+    <div id="dAbsent"></div>
+
+    <h3>Questions</h3>
+    <div class="tablewrap"><table id="qTable"></table></div>
+
+    <h3>Players</h3>
+    <div class="tablewrap"><table id="pTable"></table></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const fmtDate = (ms) => new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+const pct = (r) => (r == null ? "—" : `${Math.round(r * 100)}%`);
+
+// ---------- list ----------
+async function showList() {
+  $("detailView").hidden = true;
+  $("listView").hidden = false;
+  const games = await fetch("/api/reports").then((r) => r.json());
+  const box = $("gameList");
+  box.innerHTML = "";
+  $("empty").hidden = games.length > 0;
+  for (const g of games) {
+    const a = el("a", "card");
+    a.href = `#${g.id}`;
+    a.append(
+      el("div", "card-title", g.title),
+      el("div", "card-meta", `${fmtDate(g.started_at)} · ${g.player_count} players · ${g.question_count} questions`)
+    );
+    box.appendChild(a);
+  }
+}
+
+// ---------- detail ----------
+async function showDetail(id) {
+  const res = await fetch(`/api/reports/${encodeURIComponent(id)}`);
+  if (!res.ok) { location.hash = ""; return; }
+  const r = await res.json();
+  $("listView").hidden = true;
+  $("detailView").hidden = false;
+  $("dTitle").textContent = r.game.title;
+  $("dWhen").textContent = `${fmtDate(r.game.started_at)} · PIN ${r.game.pin}`;
+  $("csvLink").href = `/api/reports/${encodeURIComponent(id)}/csv`;
+  $("delBtn").onclick = async () => {
+    if (!confirm("Delete this report permanently?")) return;
+    await fetch(`/api/reports/${encodeURIComponent(id)}`, { method: "DELETE" });
+    location.hash = "";
+  };
+
+  // headline numbers
+  const scored = r.questions.filter((q) => q.correctRate !== null);
+  const avg = scored.length ? scored.reduce((t, q) => t + q.correctRate, 0) / scored.length : null;
+  const stats = $("dStats");
+  stats.innerHTML = "";
+  for (const [label, value] of [
+    ["Players", r.players.length],
+    ["Questions", r.questions.length],
+    ["Class average", pct(avg)],
+    ["Top score", r.players.length ? r.players[0].score : 0],
+  ]) {
+    const s = el("div", "stat");
+    s.append(el("div", "stat-value", String(value)), el("div", "stat-label", label));
+    stats.appendChild(s);
+  }
+
+  // questions most people missed
+  const review = $("dReview");
+  review.innerHTML = "";
+  if (r.needsReview.length) {
+    const box = el("div", "callout");
+    box.appendChild(el("h3", null, "Worth reviewing"));
+    box.appendChild(el("p", "muted", "Fewer than half the class got these right."));
+    const ul = el("ul");
+    for (const q of r.needsReview) {
+      const li = el("li");
+      li.append(el("strong", null, `${pct(q.correctRate)} `), document.createTextNode(`Q${q.idx + 1}. ${q.text}`));
+      ul.appendChild(li);
+    }
+    box.appendChild(ul);
+    review.appendChild(box);
+  }
+
+  // who was on the class list but never played
+  const absent = $("dAbsent");
+  absent.innerHTML = "";
+  if (r.roster) {
+    const box = el("div", "callout");
+    box.appendChild(el("h3", null, `Class list: ${r.roster.title}`));
+    box.appendChild(el("p", null,
+      r.roster.absent.length
+        ? `${r.roster.absent.length} of ${r.roster.total} did not play: ${r.roster.absent.join(", ")}`
+        : `All ${r.roster.total} students played.`));
+    absent.appendChild(box);
+  }
+
+  buildTable($("qTable"),
+    ["#", "Question", "Type", "Answer", "Correct", "Responses", "Avg time"],
+    r.questions.map((q) => [
+      q.idx + 1, q.text, q.type, q.answer ?? "—",
+      q.correctRate === null ? "—" : `${q.correct}/${q.scored} · ${pct(q.correctRate)}`,
+      q.responses,
+      q.avgMs == null ? "—" : `${(q.avgMs / 1000).toFixed(1)}s`,
+    ]),
+    r.questions.map((q) => (q.correctRate !== null && q.correctRate < 0.5 ? "warn" : "")));
+
+  const idLabel = r.players.some((p) => p.identifier) ? "Identifier" : null;
+  buildTable($("pTable"),
+    ["Rank", "Nickname", ...(idLabel ? [idLabel] : []), "Score", "Correct"],
+    r.players.map((p) => [
+      p.rank ?? "—", p.name, ...(idLabel ? [p.identifier ?? "—"] : []),
+      p.score, p.scored ? `${p.correct}/${p.scored}` : "—",
+    ]));
+}
+
+function buildTable(table, head, rows, rowClasses = []) {
+  table.innerHTML = "";
+  const thead = el("thead");
+  const hr = el("tr");
+  for (const h of head) hr.appendChild(el("th", null, h));
+  thead.appendChild(hr);
+  const tbody = el("tbody");
+  rows.forEach((row, i) => {
+    const tr = el("tr", rowClasses[i] || null);
+    for (const cell of row) tr.appendChild(el("td", null, String(cell)));
+    tbody.appendChild(tr);
+  });
+  table.append(thead, tbody);
+}
+
+function route() {
+  const id = location.hash.slice(1);
+  if (id) showDetail(id); else showList();
+}
+$("backLink").onclick = (e) => { e.preventDefault(); location.hash = ""; };
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>

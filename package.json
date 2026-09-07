@@ -1,0 +1,22 @@
+{
+  "name": "tigerquiz",
+  "version": "0.1.0",
+  "description": "Self-hosted live quiz game (Kahoot-style) for classrooms",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server.js",
+    "test": "node --disable-warning=ExperimentalWarning test/game.test.mjs",
+    "check": "node --disable-warning=ExperimentalWarning tools/check-quizzes.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "socket.io-client": "^4.8.3"
+  }
+}

@@ -1,0 +1,11 @@
+# dependencies
+node_modules/
+
+# saved game reports (SQLite database and its write-ahead log)
+data/
+
+# editor and OS noise
+.DS_Store
+*.swp
+.idea/
+.vscode/
