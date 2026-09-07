@@ -10,7 +10,7 @@
     "test": "node --disable-warning=ExperimentalWarning test/game.test.mjs",
     "check": "node --disable-warning=ExperimentalWarning tools/check-quizzes.mjs"
   },
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "dependencies": {
     "express": "^4.21.0",
     "qrcode": "^1.5.4",
