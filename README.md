@@ -27,6 +27,96 @@ npm test           # plays full games over websockets against a throwaway databa
 npm run check      # validate every quiz and class list before a lesson
 ```
 
+## Docker
+
+```sh
+docker build -t tigerquiz .
+docker run -p 3000:3000 \
+  -v "$PWD/quizzes:/app/quizzes" \
+  -v "$PWD/data:/app/data" \
+  tigerquiz
+```
+
+Mount both directories. The editor writes quizzes and class lists back to
+`quizzes/`, and `data/` holds the report database; without the mounts, both are
+lost when the container is replaced. `docker-compose.example.yml` is the same
+thing for compose.
+
+## Behind a reverse proxy
+
+tigerquiz can be served from a sub-path, so `https://example.edu/quiz/` works
+without giving it a hostname of its own. The pages work out which prefix they
+are under from their own URL, so there is nothing to set in the app: the join
+link and QR code shown to students pick up the prefix on their own.
+
+Strip the prefix before the request reaches the app, pass the websocket
+through, and keep the timeout longer than a lesson. In nginx:
+
+```nginx
+location = /quiz { return 301 /quiz/; }
+
+# "^~" so a regex location for *.js and *.css cannot claim these first. Nginx
+# checks regex locations before plain prefix ones, so without it a proxy that
+# caches static assets will send style.css and the socket.io client somewhere
+# else, and the symptom is an unstyled page rather than an error.
+location ^~ /quiz/ {
+    # the trailing slash on proxy_pass is what strips /quiz
+    proxy_pass http://tigerquiz:3000/;
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $http_connection;
+    proxy_set_header Host $host;
+
+    # a game holds one websocket open for the whole lesson
+    proxy_read_timeout 3600s;
+    proxy_buffering off;
+}
+```
+
+## Locking it down
+
+tigerquiz has no login of its own. On a classroom network that is usually
+fine. Somewhere reachable from the internet it is not: the reports and class
+lists carry student names and identifiers, and `/api/quiz/<id>` returns the
+answer key, which any student could fetch mid-game.
+
+There is a clean split between what a player needs and what only the teacher
+needs, so the proxy can ask for a password on the second group:
+
+| Public | Teacher only |
+| --- | --- |
+| `/`, `style.css`, `sound.js` | `host.html`, `edit.html`, `reports.html` |
+| `socket.io/`, `/quiz-images/` | everything under `/api/` |
+| `/api/nickname` | |
+
+Protect the whole of `/api/` and carve `/api/nickname` back out, rather than
+listing the endpoints to protect. That way an endpoint added later is covered
+by default instead of being exposed until somebody notices. With nginx:
+
+```nginx
+location ^~ /quiz/api/ {
+    auth_basic "tigerquiz";
+    auth_basic_user_file /path/to/htpasswd;
+    # ...same proxy settings as above
+}
+
+# the dice button on the join screen suggests a nickname
+location = /quiz/api/nickname {
+    # ...same proxy settings as above, no auth_basic
+}
+```
+
+An exact `=` match wins over a `^~` prefix, which is what lets the one public
+endpoint sit inside the protected tree.
+
+Two things this does not cover. Browsers hold basic-auth credentials until the
+window closes, so close the browser on a shared podium machine rather than the
+tab. And `host:create` arrives over the websocket, which is one endpoint shared
+by hosts and players and so cannot be split by path: a stranger can start a
+game of their own, though the host token still stops anyone touching a game
+already running.
+
 ## Writing quizzes
 
 The easiest way is the editor at `/edit.html`. It lists your quizzes and class

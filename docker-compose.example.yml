@@ -1,0 +1,28 @@
+# Minimal compose file for tigerquiz. Copy it to docker-compose.yml and adjust.
+#
+#   docker compose up -d
+#
+# quizzes/ and data/ are mounted from the host so the editor's saves and the
+# report database survive rebuilding the image.
+
+services:
+  tigerquiz:
+    build: .
+    image: tigerquiz
+    container_name: tigerquiz
+    restart: unless-stopped
+
+    # Match the host user that owns quizzes/ and data/, otherwise files the app
+    # writes are owned by root and you cannot edit them outside the container.
+    user: "1000:1000"
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - ./quizzes:/app/quizzes
+      - ./data:/app/data
+
+# Behind a reverse proxy on the same docker network, drop the ports mapping
+# above and let the proxy reach the container as tigerquiz:3000. The game is
+# then only reachable through the proxy instead of on a bare host port.
