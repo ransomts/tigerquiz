@@ -4,6 +4,14 @@ A walkthrough of one game from start to finish, for the person standing at the
 front of the room. It assumes somebody has already installed tigerquiz and told
 you the address; if that is still to do, see the [README](../README.md).
 
+At Clemson that address is
+[brgr.cecas.clemson.edu/quiz/](https://brgr.cecas.clemson.edu/quiz/) — students
+open that one, and you want the
+[host screen](https://brgr.cecas.clemson.edu/quiz/host.html), which asks for a
+password. The other two teacher pages this walkthrough uses are the
+[editor](https://brgr.cecas.clemson.edu/quiz/edit.html) and the
+[reports](https://brgr.cecas.clemson.edu/quiz/reports.html).
+
 Every screenshot here is a real game, played with the `all-types` demo quiz and
 the `period3` demo class list that ship with the project.
 

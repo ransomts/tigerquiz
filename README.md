@@ -3,6 +3,22 @@
 A small self-hosted live quiz game in the style of Kahoot. One host screen on the
 projector, players join from their phones with a PIN, fastest correct answer scores most.
 
+## Try it
+
+There is a live instance at **[brgr.cecas.clemson.edu/quiz/](https://brgr.cecas.clemson.edu/quiz/)**.
+
+| Page | Who can open it |
+| --- | --- |
+| [Join a game](https://brgr.cecas.clemson.edu/quiz/) | Anyone — this is what students see |
+| [Host screen](https://brgr.cecas.clemson.edu/quiz/host.html) | Password |
+| [Editor](https://brgr.cecas.clemson.edu/quiz/edit.html) | Password |
+| [Reports](https://brgr.cecas.clemson.edu/quiz/reports.html) | Password |
+
+It is served from a sub-path behind nginx with the teacher pages under basic
+auth, which is the arrangement [Behind a reverse proxy](#behind-a-reverse-proxy)
+and [Locking it down](#locking-it-down) describe. Ask for the password if you
+want to run a game rather than play in one.
+
 ## Run
 
 ```sh
@@ -47,8 +63,9 @@ thing for compose.
 
 ## Behind a reverse proxy
 
-tigerquiz can be served from a sub-path, so `https://example.edu/quiz/` works
-without giving it a hostname of its own. The pages work out which prefix they
+tigerquiz can be served from a sub-path, so
+[`https://brgr.cecas.clemson.edu/quiz/`](https://brgr.cecas.clemson.edu/quiz/)
+works without giving it a hostname of its own. The pages work out which prefix they
 are under from their own URL, so there is nothing to set in the app: the join
 link and QR code shown to students pick up the prefix on their own.
 
@@ -126,6 +143,14 @@ long a key stays valid.
 One thing none of this covers: browsers hold basic-auth credentials until the
 window closes, so close the browser on a shared podium machine rather than just
 the tab.
+
+The [live instance](https://brgr.cecas.clemson.edu/quiz/) is configured exactly
+this way, so it doubles as a worked example: the join screen and the nickname
+endpoint answer to anyone, while
+[`host.html`](https://brgr.cecas.clemson.edu/quiz/host.html),
+[`edit.html`](https://brgr.cecas.clemson.edu/quiz/edit.html),
+[`reports.html`](https://brgr.cecas.clemson.edu/quiz/reports.html) and
+everything under `/api/` return 401 until you give it the password.
 
 ## Writing quizzes
 
