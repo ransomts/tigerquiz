@@ -1,40 +1,51 @@
 <% content_for :title, "tigerquiz" %>
-<div id="pausedBanner" class="banner" hidden>Paused by the host</div>
+<div id="pausedBanner" class="banner" role="status" hidden>Paused by the host</div>
 <main>
-  <section id="join" class="screen center active">
-    <h1>tigerquiz</h1>
+  <%# Every field has a real label rather than only a placeholder: a placeholder
+      disappears on the first keystroke, is not reliably announced, and is the
+      lowest-contrast text on the screen. They are hidden visually, not from
+      assistive software. %>
+  <section id="join" class="screen center active" tabindex="-1" aria-labelledby="joinHeading">
+    <h1 id="joinHeading">tigerquiz</h1>
+    <label class="sr-only" for="pin">Game PIN</label>
     <input id="pin" inputmode="numeric" pattern="[0-9]*" placeholder="Game PIN" maxlength="6" autocomplete="off">
-    <div id="gameTitle" class="muted"></div>
+    <div id="gameTitle" class="muted" role="status"></div>
     <div class="namerow">
+      <label class="sr-only" for="name">Nickname</label>
       <input id="name" placeholder="Nickname" maxlength="20" autocomplete="off">
-      <button id="diceBtn" class="dice" title="Suggest a nickname">🎲</button>
+      <button id="diceBtn" class="dice" title="Suggest a nickname" aria-label="Suggest a nickname">🎲</button>
     </div>
+    <label class="sr-only" id="identLabel" for="ident">Student ID</label>
     <input id="ident" placeholder="" maxlength="40" autocomplete="off" hidden>
     <button id="joinBtn" class="primary">Join</button>
-    <div id="joinErr" class="error"></div>
+    <div id="joinErr" class="error" role="alert"></div>
   </section>
 
-  <section id="wait" class="screen center">
-    <h2>You're in, <span id="waitName"></span>!</h2>
+  <section id="wait" class="screen center" tabindex="-1" aria-labelledby="waitHeading">
+    <h2 id="waitHeading">You're in, <span id="waitName"></span>!</h2>
     <p class="muted">Watch the host screen. Questions appear here.</p>
   </section>
 
-  <section id="question" class="screen">
-    <div class="hud"><span id="qCount"></span><span id="qTimer"></span></div>
-    <div class="timerbar"><div id="qBar"></div></div>
+  <section id="question" class="screen" tabindex="-1" aria-labelledby="qCount">
+    <%# The clock is hidden from assistive software: it changes four times a
+        second, and a running commentary on it would bury the question. %>
+    <div class="hud"><span id="qCount"></span><span id="qTimer" aria-hidden="true"></span></div>
+    <div class="timerbar" aria-hidden="true"><div id="qBar"></div></div>
     <h2 id="qText" class="qtext" hidden></h2>
-    <img id="qImage" class="qimg" alt="" hidden>
+    <%# The quiz format carries no alt text, so this says only that a picture is
+        there. A question that depends on its image needs the projector. %>
+    <img id="qImage" class="qimg" alt="Image for this question" hidden>
     <div id="prompt" class="prompt muted"></div>
     <div id="answerArea"></div>
     <div id="submitRow" class="row" hidden><button id="submitBtn" class="primary" disabled>Submit</button></div>
   </section>
 
-  <section id="answered" class="screen center">
+  <section id="answered" class="screen center" tabindex="-1" aria-labelledby="answeredTitle">
     <h2 id="answeredTitle">Answer locked in</h2>
     <p class="muted">Waiting for everyone else…</p>
   </section>
 
-  <section id="result" class="screen">
+  <section id="result" class="screen" tabindex="-1" aria-labelledby="resultTitle">
     <div id="resultBox" class="fill">
       <div id="resultTitle" class="big"></div>
       <div id="resultStreak" class="streak" hidden></div>
@@ -46,21 +57,27 @@
     </div>
   </section>
 
-  <section id="end" class="screen center">
-    <h1>Game over</h1>
+  <section id="end" class="screen center" tabindex="-1" aria-labelledby="endHeading">
+    <h1 id="endHeading">Game over</h1>
     <div id="endRank" class="big"></div>
     <div id="endScore" style="font-size:1.5rem"></div>
     <button id="againBtn">Join another game</button>
   </section>
 </main>
-<footer><span id="me"></span><span id="status" class="muted"></span></footer>
+<footer><span id="me"></span><span id="status" class="muted" role="status"></span></footer>
 
 <%= javascript_include_tag "api", "actioncable", "game-socket" %>
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
 const SYMS = ["▲", "◆", "●", "■"];
 const $ = (id) => document.getElementById(id);
+// The phone swaps screens in place, which a screen reader has no way to notice.
+// Moving focus to the section that just became active is what announces it, and
+// each section names itself through aria-labelledby. Sections are tabindex="-1"
+// so they take focus programmatically without joining the tab order.
 const show = (id) => {
   document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === id));
+  const active = document.getElementById(id);
+  if (active && document.activeElement !== active) active.focus({ preventScroll: true });
 };
 
 const socket = gameSocket();
@@ -94,7 +111,11 @@ function lookup() {
     if (!res.ok) { $("gameTitle").textContent = ""; $("ident").hidden = true; return; }
     $("gameTitle").textContent = res.title;
     $("ident").hidden = !res.identifier;
-    if (res.identifier) $("ident").placeholder = res.identifier;
+    $("identLabel").hidden = !res.identifier;
+    if (res.identifier) {
+      $("ident").placeholder = res.identifier;
+      $("identLabel").textContent = res.identifier;
+    }
   });
 }
 $("pin").addEventListener("input", () => { clearTimeout(lookupTimer); lookupTimer = setTimeout(lookup, 250); });
@@ -298,13 +319,18 @@ function buildButtons(q, area, onClick) {
   for (let i = 0; i < n; i++) {
     const b = document.createElement("button");
     b.className = `choice c${i}`;
-    b.innerHTML = `<span class="sym">${SYMS[i] ?? i + 1}</span>`;
+    b.innerHTML = `<span class="sym" aria-hidden="true">${SYMS[i] ?? i + 1}</span>`;
     // labels are shown when knowing them cannot give the answer away
     if (q.labels && q.labels[i]) {
       const t = document.createElement("span");
       t.className = "tf";
       t.textContent = q.labels[i];
       b.appendChild(t);
+    } else {
+      // Otherwise the tile is a coloured shape and nothing else. The shape is
+      // decorative; what identifies it out loud is its position, which is also
+      // how the host screen refers to it.
+      b.setAttribute("aria-label", `Answer ${i + 1}`);
     }
     if (onClick) b.onclick = () => onClick(i);
     grid.appendChild(b);

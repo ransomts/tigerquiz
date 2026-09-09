@@ -61,7 +61,7 @@
 </main>
 
 <%= javascript_include_tag "api" %>
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const fmtDate = (ms) => new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
@@ -192,15 +192,25 @@ async function showDetail(id) {
     location.hash = "";
   };
 
-  // headline numbers
+  // Headline numbers. The average is weighted by how many people answered:
+  // averaging the per-question rates instead would let a question one student
+  // got right count for as much as one the whole class attempted, and a lesson
+  // where most of the room sat out would read as though it went well.
   const scored = r.questions.filter((q) => q.correctRate !== null);
-  const avg = scored.length ? scored.reduce((t, q) => t + q.correctRate, 0) / scored.length : null;
+  const answered = scored.reduce((t, q) => t + q.scored, 0);
+  const right = scored.reduce((t, q) => t + q.correct, 0);
+  const avg = answered ? right / answered : null;
+  // and how much of the room those answers came from, which is the number that
+  // says whether the average above is worth anything
+  const possible = scored.length * r.players.length;
+  const turnout = possible ? answered / possible : null;
   const stats = $("dStats");
   stats.innerHTML = "";
   for (const [label, value] of [
     ["Players", r.players.length],
     ["Questions", r.questions.length],
     ["Class average", pct(avg)],
+    ["Answered", pct(turnout)],
     ["Top score", r.players.length ? r.players[0].score : 0],
   ]) {
     const s = el("div", "stat");

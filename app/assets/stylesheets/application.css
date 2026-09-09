@@ -5,10 +5,20 @@
   --muted: #b8b8cc;
   --c0: #e21b3c; /* red    ▲ */
   --c1: #1368ce; /* blue   ◆ */
-  --c2: #d89e00; /* yellow ● */
+  --c2: #8f6600; /* amber  ● */
   --c3: #26890c; /* green  ■ */
   --ok: #26890c;
   --bad: #e21b3c;
+  /* Never white: a solid white outline already means "correct" and "picked". */
+  --focus: #ffd23f;
+}
+
+/* Keyboard focus has to be visible on the purple ground, on all four answer
+   tiles and on the white buttons. The offset puts the ring on the page behind
+   whatever has focus, so one colour covers every case. */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
 }
 * { box-sizing: border-box; }
 /* author display rules outrank the browser's [hidden] rule, so restate it */
@@ -424,3 +434,32 @@ tbody tr.clickable:hover td { background: #ffffff14; }
 .namerow { display: flex; gap: 0.5rem; align-items: center; width: 100%; max-width: 20rem; }
 .namerow input { flex: 1; }
 button.dice { flex: none; padding: 0.75rem 0.9rem; font-size: 1.1rem; }
+
+/* Present to a screen reader, absent from the screen. Used for the labels on
+   the join form, which a placeholder cannot stand in for. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A section takes focus when it becomes the visible screen, which is what
+   announces it. That is not a control, so it gets no ring. */
+.screen:focus,
+.screen:focus-visible { outline: none; }
+
+/* Nobody has to be moved to be told the score. Bars, tiles and the clock go
+   straight to their value, and the podium still reveals a place at a time,
+   because the order it reveals in is information — only the travel goes. */
+@media (prefers-reduced-motion: reduce) {
+  .choice,
+  .timerbar > div,
+  .bar .fillbar,
+  .podium-col { transition: none; }
+  .podium-col,
+  button.choice:active { transform: none; }
+}

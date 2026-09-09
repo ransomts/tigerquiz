@@ -80,7 +80,7 @@
 </footer>
 
 <%= javascript_include_tag "api", "actioncable", "game-socket", "sound" %>
-<script>
+<script nonce="<%= content_security_policy_nonce %>">
 const SYMS = ["▲", "◆", "●", "■"];
 const $ = (id) => document.getElementById(id);
 const show = (id) => document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === id));

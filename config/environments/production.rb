@@ -44,7 +44,10 @@ Rails.application.configure do
   config.active_support.report_deprecations = false
 
   # Replace the default in-process memory cache store with a durable alternative.
-  # config.cache_store = :mem_cache_store
+  # Everything lives in this one process, so a shared cache buys nothing and the
+  # default file store would put disk I/O on the hot path of a running game.
+  # The rate limits below the join endpoints count in here.
+  config.cache_store = :memory_store, { size: 8.megabytes }
 
   # Replace the default in-process and non-durable queuing backend for Active Job.
   # config.active_job.queue_adapter = :resque

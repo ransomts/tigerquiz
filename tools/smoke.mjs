@@ -12,9 +12,13 @@ const WS = BASE.replace(/^http/, "ws") + "/cable";
 // checks the two match: ORIGIN=https://quiz.example.edu to say so.
 const ORIGIN = process.env.ORIGIN || new URL(BASE).origin;
 // In development the server signs requests in as the developer user, who owns
-// the seeded quizzes. Against a production instance there is no such fallback,
-// so send the header the proxy would set: TIGERQUIZ_USER=you@example.edu.
-const HOST = process.env.TIGERQUIZ_USER ? { "X-Remote-User": process.env.TIGERQUIZ_USER } : {};
+// the seeded quizzes. Against a real instance the proxy decides who you are, so
+// either sign in the way it expects (AUTH=user:password, for a proxy doing basic
+// auth) or, with no proxy in front, send the header it would have set
+// (TIGERQUIZ_USER=you@example.edu).
+const HOST = {};
+if (process.env.AUTH) HOST.Authorization = `Basic ${Buffer.from(process.env.AUTH).toString("base64")}`;
+else if (process.env.TIGERQUIZ_USER) HOST["X-Remote-User"] = process.env.TIGERQUIZ_USER;
 
 let cookie = "";
 let csrf = "";

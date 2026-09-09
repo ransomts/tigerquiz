@@ -1,0 +1,27 @@
+# bin/ci already runs setup, the gem audit, the whole suite and a seed check.
+# This only makes something run it that is not a person remembering to.
+name: CI
+
+on:
+  push:
+    branches: [ main, ruby ]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      # The pure-logic tests replay a fixture recorded from the Node version, so
+      # node is needed to regenerate it but not to run them. Kept for tools/.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: bin/ci
