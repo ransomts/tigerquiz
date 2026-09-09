@@ -1,0 +1,15 @@
+{ "title": "Broken", "questions": [
+  { "text": "Fine", "choices": ["a", "b"], "answer": 0, "explanation": "ok" },
+  { "text": "Bad index", "choices": ["a", "b"], "answer": 7 },
+  { "text": "Dupes", "choices": ["Same", "same ", "other"], "answer": 0 },
+  { "text": "Empty choice", "choices": ["a", "  "], "answer": 0 },
+  { "text": "Fine", "choices": ["a", "b"], "answer": 1, "time": 2 },
+  { "type": "slider", "text": "Range", "min": 0, "max": 10, "answer": 50, "step": 0.001 },
+  { "type": "text", "text": "Spell", "accept": ["a very long accepted answer that nobody will type exactly right"], "explanation": "x" },
+  { "type": "multi", "text": "All", "choices": ["a", "b"], "answers": [0, 1], "explanation": "x" },
+  { "type": "slide" },
+  { "type": "mystery", "text": "Unknown type", "choices": ["a", "b"], "answer": 0, "explanation": "x", "discuss": true },
+  { "type": "poll", "text": "Poll", "choices": ["a", "b"], "discuss": true, "image": "missing.png" },
+  { "text": "Long", "choices": ["a", "b"], "answer": 0, "time": 400, "explanation": "x", "image": "present.png" },
+  "not an object"
+], "bogus": 1 }

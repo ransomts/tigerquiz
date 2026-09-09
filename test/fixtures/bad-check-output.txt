@@ -1,0 +1,43 @@
+
+test/fixtures/bad-quizzes/broken.json
+  warning unknown quiz field "bogus", it will be ignored
+  error   question 2: answer must be an index into choices
+  error   question 3: duplicate choices (same)
+  warning question 3: no explanation, students will not learn why they were wrong
+  error   question 4: a choice is empty
+  warning question 4: no explanation, students will not learn why they were wrong
+  warning question 5: same text as question 1
+  warning question 5: only 2s to answer
+  warning question 5: no explanation, students will not learn why they were wrong
+  error   question 6: answer 50 is outside 0-10
+  warning question 6: 10000 steps is hard to hit on a phone
+  warning question 6: no tolerance set, defaulting to 5% of the range
+  warning question 6: no explanation, students will not learn why they were wrong
+  warning question 7: a long accepted answer is hard to type exactly
+  warning question 7: only one accepted spelling, consider listing alternatives
+  warning question 8: every choice is correct
+  warning question 9: slide has neither text nor an image
+  warning question 10: unknown type "mystery", treated as choice
+  warning question 11: discuss only affects choice-style questions
+  error   question 11: image "missing.png" not found in quizzes/images/
+  warning question 12: 400s is a very long timer
+  error   question 12: image "present.png" not found in quizzes/images/
+  error   question 13: not an object
+  11/13 questions valid · 7 choice, 1 slider, 1 text, 1 multi, 1 slide, 1 mystery, 1 poll
+
+test/fixtures/bad-quizzes/notjson.json
+  error   not valid JSON: Expected double-quoted property name in JSON at position 20 (line 2 column 1)
+
+test/fixtures/bad-quizzes/empty.json
+  warning no title, the filename will be used instead
+  error   no questions array
+
+test/fixtures/bad-quizzes/bad name!.json
+  error   filename "bad name!" must be letters, digits, dash or underscore only
+  warning question 1: question text is 174 characters, it may not fit on screen
+  1/1 questions valid · 1 choice
+
+test/fixtures/bad-quizzes/missing.json
+  error   file not found
+
+11 errors, 18 warnings

@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Run the tests of the pure logic under lib/ without Rails.
+Dir[File.expand_path("../test/lib/*_test.rb", __dir__)].sort.each { |f| require f }

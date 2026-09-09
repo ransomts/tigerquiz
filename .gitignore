@@ -1,11 +1,27 @@
-# dependencies
-node_modules/
-
-# saved game reports (SQLite database and its write-ahead log)
-data/
+# Rails
+/.bundle
+/vendor/bundle
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+/tmp/pids/*
+!/tmp/pids/.keep
+/storage/*
+!/storage/.keep
+/tmp/storage/*
+!/tmp/storage/.keep
+/db/*.sqlite3
+/db/*.sqlite3-*
+/config/master.key
+/config/credentials/*.key
+/public/assets
 
 # editor and OS noise
 .DS_Store
 *.swp
 .idea/
 .vscode/
+
+# saved game reports from the Node version, kept out of the port
+/data/

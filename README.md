@@ -1,5 +1,10 @@
 # tigerquiz
 
+> **Rails port in progress.** This branch is being ported from Node to Ruby on
+> Rails; see `PORT.md` for the plan and its status. The `npm` commands below
+> describe the Node version on `main` and no longer apply here. What works so far:
+> `bin/check` validates quizzes and `bin/test-lib` runs the logic tests.
+
 A small self-hosted live quiz game in the style of Kahoot. One host screen on the
 projector, players join from their phones with a PIN, fastest correct answer scores most.
 

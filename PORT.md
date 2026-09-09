@@ -220,3 +220,26 @@ What does deserve attention:
 
 Where Ruby would start to matter is thousands of simultaneous games, which is not this
 application.
+
+## Status
+
+- [x] Phase 1: skeleton and pure logic. Rails 8.1 app at the repo root, `Tigerquiz::Questions`,
+      `Tigerquiz::Nicknames` and `Tigerquiz::QuizCheck` under `lib/`, parity fixtures recorded
+      from the Node code, `bin/check` and `bin/rails quizzes:check`. The Node runtime is gone
+      from this branch; `main` keeps it.
+- [ ] Phase 2: models and import.
+- [ ] Phase 3: authentication and ownership.
+- [ ] Phase 4: editor and reports.
+- [ ] Phase 5: game engine.
+- [ ] Phase 6: deployment.
+
+### Notes from phase 1
+
+- The Ruby port keeps JavaScript's loose coercions on purpose (`"time": "15"`, `"answer": "true"`),
+  because existing quiz files rely on them. `Questions.js_num` and `Questions.js_str` are where
+  that lives; everything else is plain Ruby.
+- Questions are hashes with string keys in the same camelCase shape as the JSON files and the
+  browser code. Symbolising them would mean translating at every boundary.
+- `Nicknames.suggest` now retries until the suggestion passes the screen. The Node version could
+  suggest a name its own join screen would then refuse.
+- Setting up without root: `bundle config set --local path vendor/bundle` before `bundle install`.

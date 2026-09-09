@@ -1,0 +1,22 @@
+
+quizzes/all-types.json
+  9/9 questions valid · 1 slide, 1 choice, 1 truefalse, 1 multi, 1 slider, 1 text, 1 order, 1 poll, 1 wordcloud
+
+quizzes/features-demo.json
+  warning question 1: no explanation, students will not learn why they were wrong
+  warning question 2: no explanation, students will not learn why they were wrong
+  warning question 3: no explanation, students will not learn why they were wrong
+  warning question 4: no explanation, students will not learn why they were wrong
+  4/4 questions valid · 2 choice, 2 truefalse
+
+quizzes/sample.json
+  warning question 1: no explanation, students will not learn why they were wrong
+  warning question 2: no explanation, students will not learn why they were wrong
+  warning question 3: no explanation, students will not learn why they were wrong
+  warning question 4: no explanation, students will not learn why they were wrong
+  4/4 questions valid · 4 choice
+
+quizzes/rosters/period3.json
+  5 students
+
+No errors, 8 warnings

@@ -1,0 +1,11 @@
+# Game state lives in the single Puma process, so the in-process adapter is all
+# Action Cable needs. Switch to solid_cable or redis only if the app is ever
+# spread over more than one process, which also means moving the game registry.
+development:
+  adapter: async
+
+test:
+  adapter: test
+
+production:
+  adapter: async
