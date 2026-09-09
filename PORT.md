@@ -227,7 +227,9 @@ application.
       `Tigerquiz::Nicknames` and `Tigerquiz::QuizCheck` under `lib/`, parity fixtures recorded
       from the Node code, `bin/check` and `bin/rails quizzes:check`. The Node runtime is gone
       from this branch; `main` keeps it.
-- [ ] Phase 2: models and import.
+- [x] Phase 2: models and import. Quizzes and class lists live in the database as JSON
+      documents owned by a user; `bin/rails quizzes:import[eppn]` loads the files, and
+      `db/seeds.rb` does the same for the developer user.
 - [ ] Phase 3: authentication and ownership.
 - [ ] Phase 4: editor and reports.
 - [ ] Phase 5: game engine.
@@ -243,3 +245,8 @@ application.
 - `Nicknames.suggest` now retries until the suggestion passes the screen. The Node version could
   suggest a name its own join screen would then refuse.
 - Setting up without root: `bundle config set --local path vendor/bundle` before `bundle install`.
+- The json gem is pinned below 3.0: Active Support 8.1.3 passes parse options positionally,
+  which json 3.0 rejects.
+- Question images stay in a directory (`quizzes/images/`, or `TIGERQUIZ_IMAGES`) served by a
+  route, rather than moving to Active Storage. The editor never uploaded images; instructors
+  drop files in a folder, and a folder is easier to back up and to serve from Apache directly.
