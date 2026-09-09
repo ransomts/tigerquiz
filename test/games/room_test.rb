@@ -306,6 +306,46 @@ class RoomTest < ActiveSupport::TestCase
     assert_includes @user.quizzes.map(&:summary).map { |s| s["id"] }, review.slug
   end
 
+  test "players on the same score share a rank" do
+    room = room_for("sample")
+    # joined in this order on purpose: ranking by position would have handed out
+    # 1st, 2nd and 3rd in exactly this order regardless of how anyone played
+    %w[ada bea cid dev].each { |n| join(room, n) }
+    room.start
+    q = host_question(room)
+    right = q["choices"].index("Central Processing Unit")
+    wrong = (right + 1) % q["choices"].length
+
+    # one right, three wrong: a wrong answer always scores zero, so the losing
+    # three are exactly level however fast they were
+    answer!(room, "ada", right)
+    %w[bea cid dev].each { |n| answer!(room, n, wrong) }
+
+    board = host_results(room).last["leaderboard"]
+    assert_equal "ada", board.first["name"]
+    assert_equal [ 1, 2, 2, 2 ], board.map { |b| b["rank"] }, "equal scores share a rank"
+    refute_includes board.map { |b| b["rank"] }, 3, "no third place is invented after a three-way tie"
+    assert_equal 1, board.drop(1).map { |b| b["score"] }.uniq.length, "the tied players really are level"
+
+    dev = player_results(room, "dev").last
+    assert_equal 2, dev["rank"], "a tied player is told the rank they share"
+    assert_equal "ada", dev["ahead"]["name"], "the gap is to someone ahead, not someone level"
+    assert_operator dev["ahead"]["gap"], :>, 0
+    assert_equal %w[bea cid], dev["levelWith"].sort, "a player is told who they are level with"
+    assert_equal q["choices"][wrong], dev["yourAnswer"], "a player is told what they answered"
+    assert_equal "everyone", dev["endedBy"], "a question everyone answered is reported as such"
+
+    # the host cutting a question short must not be reported to the student as
+    # being too slow, so the reason has to reach the phone
+    room.advance
+    answer!(room, "ada", 0)
+    room.skip
+    cut = player_results(room, "dev").last
+    assert_equal "host", cut["endedBy"], "a question the host ended is marked as ended by the host"
+    assert_equal false, cut["answered"]
+    assert_nil cut["yourAnswer"], "with no answer there is nothing to read back"
+  end
+
   test "nicknames, playing again and rehearsing alone" do
     room = room_for("sample")
     assert_match(/different nickname/, room.join("sh1thead", nil)["error"])
@@ -365,6 +405,7 @@ class RoomTest < ActiveSupport::TestCase
     assert_equal false, r["answered"]
     assert_equal 0, r["gained"]
     assert_nil r["correct"], "no answer is neither right nor wrong"
+    assert_equal "time", r["endedBy"], "the clock running out is not the host cutting in"
     room.advance
     assert game_end(room)
     assert quick.games.first.finished?

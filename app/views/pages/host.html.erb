@@ -558,27 +558,29 @@ function runPodium(board) {
   box.innerHTML = "";
   list.hidden = true;
   if (top.length < 2) { list.hidden = false; return; } // nothing to build up to
-  // columns are laid out 2nd | 1st | 3rd like a real podium
-  const order = [top[1], top[0], top[2]].filter(Boolean);
-  const cols = new Map();
-  for (const p of order) {
+  // One column per player, not per rank: players tied on score share a rank,
+  // so keying by rank would collapse them onto one column.
+  const cols = top.map((p) => {
     const c = document.createElement("div");
     c.className = `podium-col place${p.rank}`;
     c.innerHTML = `<div class="who"><span class="pname"></span><span class="pscore"></span></div><div class="block">${p.rank}</div>`;
     c.querySelector(".pname").textContent = p.name;
     c.querySelector(".pscore").textContent = `${p.score} pts`;
-    box.appendChild(c);
-    cols.set(p.rank, c);
-  }
-  const reveals = [3, 2, 1].filter((r) => cols.has(r));
-  reveals.forEach((rank, i) => {
+    return { player: p, el: c };
+  });
+  // columns are laid out 2nd | 1st | 3rd like a real podium
+  for (const c of [cols[1], cols[0], cols[2]].filter(Boolean)) box.appendChild(c.el);
+
+  // reveal lowest place first, and everyone sharing a place together
+  const places = [...new Set(top.map((p) => p.rank))].sort((a, b) => b - a);
+  places.forEach((rank, i) => {
     setTimeout(() => Sound.drumroll(1.2), i * PODIUM_STEP_MS);
     setTimeout(() => {
-      cols.get(rank).classList.add("shown");
+      for (const c of cols) if (c.player.rank === rank) c.el.classList.add("shown");
       if (rank === 1) Sound.fanfare(); else Sound.reveal();
     }, i * PODIUM_STEP_MS + 1400);
   });
-  setTimeout(() => { list.hidden = false; }, reveals.length * PODIUM_STEP_MS + 800);
+  setTimeout(() => { list.hidden = false; }, places.length * PODIUM_STEP_MS + 800);
 }
 
 socket.on("game:error", (m) => alert(m.message));

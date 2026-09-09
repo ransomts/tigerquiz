@@ -145,7 +145,12 @@ ol.board li:first-child { background: #f56600; }
 .rankline { font-size: 1.1rem; font-weight: 600; }
 .result-ok { background: var(--ok); }
 .result-bad { background: var(--bad); }
-.fill { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 1rem; border-radius: 0.75rem; }
+/* the feedback lines read as one block rather than a loose list floating in a
+   tall coloured panel, so the whole verdict lands in a single glance */
+.fill { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 0.55rem; border-radius: 0.75rem; padding: 1rem; }
+.fill .big { line-height: 1.05; }
+.answerline { font-size: 1.15rem; line-height: 1.35; max-width: 22rem; }
+.rankline + .muted { font-size: 1rem; }
 .linkbtn {
   background: none; color: inherit; font: inherit; padding: 0;
   border-radius: 0; text-decoration: underline; cursor: pointer;
@@ -185,7 +190,7 @@ footer { padding: 0.5rem 1rem; color: var(--muted); font-size: 0.85rem; display:
 /* ---------- answer inputs (player) ---------- */
 .prompt { text-align: center; min-height: 1.2em; }
 #answerArea { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-#answerArea.pad { justify-content: center; gap: 1rem; padding: 1rem 0; }
+#answerArea.pad { justify-content: center; gap: 1rem; padding: 0.25rem 0; }
 #answerArea.center { align-items: center; }
 #answerArea > .grid { flex: 1; }
 .choice.picked { outline: 5px solid #fff; }

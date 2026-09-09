@@ -62,6 +62,7 @@ class ParityTest < Minitest::Test
       assert_equal r["playerView"], js(Q.player_view(q, pres)), "playerView #{label}"
       assert_equal r["playerViewText"], js(Q.player_view(q, pres, show_text: true)), "playerView showText #{label}"
       assert_json r["answerView"], js(Q.answer_view(q, pres)), "answerView #{label}"
+      assert_json r["noAnswerLabel"], js(Q.response_label(q, nil, pres)), "responseLabel of no answer #{label}"
       assert_json r["choiceLabels"], js(Q.choice_labels(q)), "choiceLabels #{label}"
       assert_equal r["emptySummary"], js(Q.summarize(q, pres, [])), "empty summarize #{label}"
     end
@@ -85,6 +86,7 @@ class ParityTest < Minitest::Test
           value = Q.parse_response(q, raw)
           assert_equal c["output"], js(value), "parse #{label}"
           assert_equal c["grade"], js(Q.grade(q, value, pres)), "grade #{label}"
+          assert_json c["label"], js(Q.response_label(q, value, pres)), "responseLabel #{label}"
           parsed << value
         end
       end

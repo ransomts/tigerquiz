@@ -421,6 +421,28 @@ module Tigerquiz
       end
     end
 
+    # How a player's own answer should read back to them, mirroring answer_view.
+    # Order responses index into the shuffled list the player was shown, so they
+    # have to be mapped back through the presentation to name the right items.
+    def response_label(q, response, pres)
+      return nil if response.nil?
+
+      case q["type"]
+      when "choice", "truefalse", "poll"
+        q["choices"] && q["choices"][response]
+      when "multi"
+        response.empty? ? nil : response.map { |i| q["choices"][i] }.join(", ")
+      when "slider"
+        "#{js_str(response)}#{q["unit"].to_s.empty? ? "" : " #{q["unit"]}"}"
+      when "text"
+        js_str(response)
+      when "order"
+        response.map { |shown| q["items"][pres["shown"][shown]] }.join(" → ")
+      when "wordcloud"
+        response.is_a?(Array) ? response.join(", ") : js_str(response)
+      end
+    end
+
     # Aggregate every response for the host results screen.
     def summarize(q, pres, responses)
       case q["type"]

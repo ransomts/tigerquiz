@@ -156,6 +156,7 @@ for (const [qi, question] of valid.entries()) {
     const c = { raw: raw === undefined ? { undefined: true } : raw, ...r };
     if (r.output !== undefined) {
       c.grade = Q.grade(question, r.output, pres);
+      c.label = Q.responseLabel(question, r.output, pres);
       parsed.push(r.output);
     }
     cases.push(c);
@@ -167,6 +168,7 @@ for (const [qi, question] of valid.entries()) {
     playerView: Q.playerView(question, pres),
     playerViewText: Q.playerView(question, pres, { showText: true }),
     answerView: Q.answerView(question, pres),
+    noAnswerLabel: Q.responseLabel(question, null, pres),
     choiceLabels: Q.choiceLabels(question),
     summary: Q.summarize(question, pres, parsed),
     emptySummary: Q.summarize(question, pres, []),

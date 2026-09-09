@@ -2809,6 +2809,7 @@
     "index": 1,
     "label": "2"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "a",
     "2",
@@ -2852,7 +2853,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "a"
     },
     {
      "raw": 1,
@@ -2860,7 +2862,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "2"
     },
     {
      "raw": 2,
@@ -2868,7 +2871,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "true"
     },
     {
      "raw": 3,
@@ -2876,7 +2880,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "null"
     },
     {
      "raw": -1,
@@ -2914,7 +2919,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "2"
     }
    ]
   },
@@ -2951,6 +2957,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -2989,7 +2996,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -2997,7 +3005,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -3005,7 +3014,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -3043,7 +3053,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -3082,6 +3093,7 @@
     "index": 0,
     "label": "True"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -3115,7 +3127,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -3123,7 +3136,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -3161,7 +3175,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -3200,6 +3215,7 @@
     "index": 1,
     "label": "False"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -3233,7 +3249,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -3241,7 +3258,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -3279,7 +3297,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -3318,6 +3337,7 @@
     "index": 0,
     "label": "True"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -3351,7 +3371,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -3359,7 +3380,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -3397,7 +3419,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -3436,6 +3459,7 @@
     "index": 1,
     "label": "False"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -3469,7 +3493,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -3477,7 +3502,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -3515,7 +3541,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -3554,6 +3581,7 @@
     "index": 0,
     "label": "True"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -3587,7 +3615,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -3595,7 +3624,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -3633,7 +3663,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -3672,6 +3703,7 @@
     "index": 1,
     "label": "False"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -3705,7 +3737,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -3713,7 +3746,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -3751,7 +3785,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -3790,6 +3825,7 @@
     "index": 1,
     "label": "False"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -3823,7 +3859,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -3831,7 +3868,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -3869,7 +3907,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -3908,6 +3947,7 @@
     "text": "Which?"
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -3946,7 +3986,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -3954,7 +3995,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -3962,7 +4004,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -4000,7 +4043,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -4039,6 +4083,7 @@
     "text": "Which?"
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -4077,7 +4122,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -4085,7 +4131,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -4093,7 +4140,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -4131,7 +4179,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -4176,6 +4225,7 @@
     ],
     "label": "A, C"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -4222,7 +4272,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "A"
     },
     {
      "raw": [
@@ -4236,7 +4287,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -4251,7 +4303,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -4267,7 +4320,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -4303,7 +4357,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "A, C"
     },
     {
      "raw": [
@@ -4315,7 +4370,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "B"
     },
     {
      "raw": [
@@ -4331,7 +4387,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -4345,7 +4402,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": 0,
@@ -4393,6 +4451,7 @@
     ],
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -4439,7 +4498,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": [
@@ -4453,7 +4513,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -4468,7 +4529,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -4484,7 +4546,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -4518,7 +4581,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": [
@@ -4532,7 +4596,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, C"
     },
     {
      "raw": [
@@ -4548,7 +4613,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -4562,7 +4628,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": 0,
@@ -4611,6 +4678,7 @@
     ],
     "label": "A, B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -4657,7 +4725,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "A"
     },
     {
      "raw": [
@@ -4671,7 +4740,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -4686,7 +4756,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -4702,7 +4773,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -4738,7 +4810,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -4750,7 +4823,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": [
@@ -4766,7 +4840,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -4780,7 +4855,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, C"
     },
     {
      "raw": 0,
@@ -4828,6 +4904,7 @@
     ],
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -4874,7 +4951,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": [
@@ -4888,7 +4966,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -4903,7 +4982,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -4919,7 +4999,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -4953,7 +5034,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": [
@@ -4967,7 +5049,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, C"
     },
     {
      "raw": [
@@ -4983,7 +5066,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -4997,7 +5081,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": 0,
@@ -5046,6 +5131,7 @@
     ],
     "label": "A, C"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -5092,7 +5178,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "A"
     },
     {
      "raw": [
@@ -5106,7 +5193,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -5121,7 +5209,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -5137,7 +5226,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -5173,7 +5263,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "A, C"
     },
     {
      "raw": [
@@ -5185,7 +5276,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "B"
     },
     {
      "raw": [
@@ -5201,7 +5293,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -5215,7 +5308,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": 0,
@@ -5263,6 +5357,7 @@
     ],
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -5309,7 +5404,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": [
@@ -5323,7 +5419,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -5338,7 +5435,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": [
@@ -5354,7 +5452,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -5388,7 +5487,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": [
@@ -5402,7 +5502,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, C"
     },
     {
      "raw": [
@@ -5418,7 +5519,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B, C"
     },
     {
      "raw": [
@@ -5432,7 +5534,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A, B"
     },
     {
      "raw": 0,
@@ -5473,6 +5576,7 @@
     "value": 50,
     "label": "50"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "slider",
@@ -5513,7 +5617,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0"
     },
     {
      "raw": 100,
@@ -5521,7 +5626,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "100"
     },
     {
      "raw": 50,
@@ -5529,7 +5635,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50"
     },
     {
      "raw": 55,
@@ -5537,7 +5644,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "55"
     },
     {
      "raw": 45,
@@ -5545,7 +5653,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "45"
     },
     {
      "raw": 57.5,
@@ -5553,7 +5662,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "57.5"
     },
     {
      "raw": 42.5,
@@ -5561,7 +5671,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "42.5"
     },
     {
      "raw": 60,
@@ -5569,7 +5680,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "60"
     },
     {
      "raw": 65,
@@ -5577,7 +5689,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "65"
     },
     {
      "raw": 50.5,
@@ -5585,7 +5698,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50.5"
     },
     {
      "raw": -1,
@@ -5601,7 +5715,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50"
     },
     {
      "raw": "",
@@ -5609,7 +5724,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0"
     },
     {
      "raw": null,
@@ -5617,7 +5733,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0"
     },
     {
      "raw": "abc",
@@ -5629,7 +5746,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "1"
     },
     {
      "raw": [
@@ -5639,7 +5757,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50"
     },
     {
      "raw": {
@@ -5682,6 +5801,7 @@
     "value": 50,
     "label": "50 kg"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "slider",
@@ -5722,7 +5842,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0 kg"
     },
     {
      "raw": 100,
@@ -5730,7 +5851,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "100 kg"
     },
     {
      "raw": 50,
@@ -5738,7 +5860,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50 kg"
     },
     {
      "raw": 55,
@@ -5746,7 +5869,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "55 kg"
     },
     {
      "raw": 45,
@@ -5754,7 +5878,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "45 kg"
     },
     {
      "raw": 57.5,
@@ -5762,7 +5887,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "57.5 kg"
     },
     {
      "raw": 42.5,
@@ -5770,7 +5896,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "42.5 kg"
     },
     {
      "raw": 60,
@@ -5778,7 +5905,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "60 kg"
     },
     {
      "raw": 65,
@@ -5786,7 +5914,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "65 kg"
     },
     {
      "raw": 50.5,
@@ -5794,7 +5923,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50.5 kg"
     },
     {
      "raw": -1,
@@ -5810,7 +5940,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50 kg"
     },
     {
      "raw": "",
@@ -5818,7 +5949,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0 kg"
     },
     {
      "raw": null,
@@ -5826,7 +5958,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0 kg"
     },
     {
      "raw": "abc",
@@ -5838,7 +5971,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "1 kg"
     },
     {
      "raw": [
@@ -5848,7 +5982,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50 kg"
     },
     {
      "raw": {
@@ -5891,6 +6026,7 @@
     "value": 50,
     "label": "50"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "slider",
@@ -5931,7 +6067,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0"
     },
     {
      "raw": 100,
@@ -5939,7 +6076,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "100"
     },
     {
      "raw": 50,
@@ -5947,7 +6085,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50"
     },
     {
      "raw": 55,
@@ -5955,7 +6094,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "55"
     },
     {
      "raw": 45,
@@ -5963,7 +6103,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "45"
     },
     {
      "raw": 57.5,
@@ -5971,7 +6112,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "57.5"
     },
     {
      "raw": 42.5,
@@ -5979,7 +6121,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "42.5"
     },
     {
      "raw": 60,
@@ -5987,7 +6130,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "60"
     },
     {
      "raw": 65,
@@ -5995,7 +6139,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "65"
     },
     {
      "raw": 50.5,
@@ -6003,7 +6148,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50.5"
     },
     {
      "raw": -1,
@@ -6019,7 +6165,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50"
     },
     {
      "raw": "",
@@ -6027,7 +6174,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0"
     },
     {
      "raw": null,
@@ -6035,7 +6183,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0"
     },
     {
      "raw": "abc",
@@ -6047,7 +6196,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "1"
     },
     {
      "raw": [
@@ -6057,7 +6207,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "50"
     },
     {
      "raw": {
@@ -6100,6 +6251,7 @@
     "value": 1.75,
     "label": "1.75"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "slider",
@@ -6138,7 +6290,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "0.5"
     },
     {
      "raw": 2.5,
@@ -6146,7 +6299,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "2.5"
     },
     {
      "raw": 1.75,
@@ -6154,7 +6308,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "1.75"
     },
     {
      "raw": 1.85,
@@ -6162,7 +6317,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.99
-     }
+     },
+     "label": "1.85"
     },
     {
      "raw": 1.65,
@@ -6170,7 +6326,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.99
-     }
+     },
+     "label": "1.65"
     },
     {
      "raw": 1.9,
@@ -6178,7 +6335,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5000000000000009
-     }
+     },
+     "label": "1.9"
     },
     {
      "raw": 1.6,
@@ -6186,7 +6344,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5000000000000009
-     }
+     },
+     "label": "1.6"
     },
     {
      "raw": 1.95,
@@ -6194,7 +6353,8 @@
      "grade": {
       "correct": false,
       "ratio": 5.551115123125783e-16
-     }
+     },
+     "label": "1.95"
     },
     {
      "raw": 2.05,
@@ -6202,7 +6362,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "2.05"
     },
     {
      "raw": 1.76,
@@ -6210,7 +6371,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "1.76"
     },
     {
      "raw": -0.5,
@@ -6226,7 +6388,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "1.75"
     },
     {
      "raw": "",
@@ -6246,7 +6409,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "1"
     },
     {
      "raw": [
@@ -6256,7 +6420,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "1.75"
     },
     {
      "raw": {
@@ -6289,6 +6454,7 @@
     ],
     "label": "x"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -6338,7 +6504,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "X",
@@ -6346,7 +6513,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "X"
     },
     {
      "raw": " x ",
@@ -6354,7 +6522,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "xx",
@@ -6362,7 +6531,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "xx"
     },
     {
      "raw": "xxy",
@@ -6370,7 +6540,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "xxy"
     },
     {
      "raw": "xxyz",
@@ -6378,7 +6549,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "xxyz"
     },
     {
      "raw": "x",
@@ -6386,7 +6558,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -6398,7 +6571,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "x",
@@ -6406,7 +6580,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -6432,7 +6607,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "42"
     },
     {
      "raw": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
@@ -6440,7 +6616,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
     },
     {
      "raw": [
@@ -6450,7 +6627,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "totally wrong",
@@ -6458,7 +6636,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "totally wrong"
     }
    ]
   },
@@ -6487,6 +6666,7 @@
     ],
     "label": "a"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -6580,7 +6760,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "A",
@@ -6588,7 +6769,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "A"
     },
     {
      "raw": " a ",
@@ -6596,7 +6778,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "ax",
@@ -6604,7 +6787,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "ax"
     },
     {
      "raw": "axy",
@@ -6612,7 +6796,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "axy"
     },
     {
      "raw": "axyz",
@@ -6620,7 +6805,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "axyz"
     },
     {
      "raw": "x",
@@ -6628,7 +6814,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -6640,7 +6827,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "a",
@@ -6648,7 +6836,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "5",
@@ -6656,7 +6845,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "5"
     },
     {
      "raw": "5",
@@ -6664,7 +6854,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "5"
     },
     {
      "raw": " 5 ",
@@ -6672,7 +6863,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "5"
     },
     {
      "raw": "5x",
@@ -6680,7 +6872,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "5x"
     },
     {
      "raw": "5xy",
@@ -6688,7 +6881,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "5xy"
     },
     {
      "raw": "5xyz",
@@ -6696,7 +6890,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "5xyz"
     },
     {
      "raw": "x",
@@ -6704,7 +6899,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -6716,7 +6912,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "5"
     },
     {
      "raw": "5",
@@ -6724,7 +6921,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "5"
     },
     {
      "raw": "null",
@@ -6732,7 +6930,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "null"
     },
     {
      "raw": "NULL",
@@ -6740,7 +6939,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "NULL"
     },
     {
      "raw": " null ",
@@ -6748,7 +6948,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "null"
     },
     {
      "raw": "nullx",
@@ -6756,7 +6957,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "nullx"
     },
     {
      "raw": "nullxy",
@@ -6764,7 +6966,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "nullxy"
     },
     {
      "raw": "nullxyz",
@@ -6772,7 +6975,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "nullxyz"
     },
     {
      "raw": "xull",
@@ -6780,7 +6984,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "xull"
     },
     {
      "raw": "ull",
@@ -6788,7 +6993,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "ull"
     },
     {
      "raw": "llun",
@@ -6796,7 +7002,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "llun"
     },
     {
      "raw": "null",
@@ -6804,7 +7011,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "null"
     },
     {
      "raw": "",
@@ -6830,7 +7038,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "42"
     },
     {
      "raw": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
@@ -6838,7 +7047,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
     },
     {
      "raw": [
@@ -6848,7 +7058,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "totally wrong",
@@ -6856,7 +7067,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "totally wrong"
     }
    ]
   },
@@ -6883,6 +7095,7 @@
     ],
     "label": "x"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -6932,7 +7145,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "X",
@@ -6940,7 +7154,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "X"
     },
     {
      "raw": " x ",
@@ -6948,7 +7163,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "xx",
@@ -6956,7 +7172,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "xx"
     },
     {
      "raw": "xxy",
@@ -6964,7 +7181,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "xxy"
     },
     {
      "raw": "xxyz",
@@ -6972,7 +7190,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "xxyz"
     },
     {
      "raw": "x",
@@ -6980,7 +7199,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -6992,7 +7212,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "x",
@@ -7000,7 +7221,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -7026,7 +7248,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "42"
     },
     {
      "raw": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
@@ -7034,7 +7257,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
     },
     {
      "raw": [
@@ -7044,7 +7268,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "totally wrong",
@@ -7052,7 +7277,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "totally wrong"
     }
    ]
   },
@@ -7080,6 +7306,7 @@
     ],
     "label": "a"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -7145,7 +7372,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "A",
@@ -7153,7 +7381,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "A"
     },
     {
      "raw": " a ",
@@ -7161,7 +7390,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "ax",
@@ -7169,7 +7399,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "ax"
     },
     {
      "raw": "axy",
@@ -7177,7 +7408,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "axy"
     },
     {
      "raw": "axyz",
@@ -7185,7 +7417,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "axyz"
     },
     {
      "raw": "x",
@@ -7193,7 +7426,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -7205,7 +7439,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "a",
@@ -7213,7 +7448,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "b",
@@ -7221,7 +7457,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "b"
     },
     {
      "raw": "B",
@@ -7229,7 +7466,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": " b ",
@@ -7237,7 +7475,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "b"
     },
     {
      "raw": "bx",
@@ -7245,7 +7484,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "bx"
     },
     {
      "raw": "bxy",
@@ -7253,7 +7493,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "bxy"
     },
     {
      "raw": "bxyz",
@@ -7261,7 +7502,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "bxyz"
     },
     {
      "raw": "x",
@@ -7269,7 +7511,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -7281,7 +7524,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "b"
     },
     {
      "raw": "b",
@@ -7289,7 +7533,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "b"
     },
     {
      "raw": "",
@@ -7315,7 +7560,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "42"
     },
     {
      "raw": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
@@ -7323,7 +7569,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
     },
     {
      "raw": [
@@ -7333,7 +7580,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "totally wrong",
@@ -7341,7 +7589,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "totally wrong"
     }
    ]
   },
@@ -7368,6 +7617,7 @@
     ],
     "label": "a"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -7417,7 +7667,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "A",
@@ -7425,7 +7676,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "A"
     },
     {
      "raw": " a ",
@@ -7433,7 +7685,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "ax",
@@ -7441,7 +7694,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "ax"
     },
     {
      "raw": "axy",
@@ -7449,7 +7703,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "axy"
     },
     {
      "raw": "axyz",
@@ -7457,7 +7712,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "axyz"
     },
     {
      "raw": "x",
@@ -7465,7 +7721,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -7477,7 +7734,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "a",
@@ -7485,7 +7743,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "",
@@ -7511,7 +7770,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "42"
     },
     {
      "raw": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
@@ -7519,7 +7779,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
     },
     {
      "raw": [
@@ -7529,7 +7790,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "totally wrong",
@@ -7537,7 +7799,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "totally wrong"
     }
    ]
   },
@@ -7564,6 +7827,7 @@
     ],
     "label": "a"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -7613,7 +7877,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "A",
@@ -7621,7 +7886,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "A"
     },
     {
      "raw": " a ",
@@ -7629,7 +7895,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "ax",
@@ -7637,7 +7904,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "ax"
     },
     {
      "raw": "axy",
@@ -7645,7 +7913,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "axy"
     },
     {
      "raw": "axyz",
@@ -7653,7 +7922,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "axyz"
     },
     {
      "raw": "x",
@@ -7661,7 +7931,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": "",
@@ -7673,7 +7944,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "a",
@@ -7681,7 +7953,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "",
@@ -7707,7 +7980,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "42"
     },
     {
      "raw": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
@@ -7715,7 +7989,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
     },
     {
      "raw": [
@@ -7725,7 +8000,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "totally wrong",
@@ -7733,7 +8009,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "totally wrong"
     }
    ]
   },
@@ -7757,6 +8034,7 @@
     "maxWords": 1
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -7796,7 +8074,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "hello"
     },
     {
      "raw": [
@@ -7814,7 +8093,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "a"
     },
     {
      "raw": [
@@ -7827,7 +8107,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": [],
@@ -7845,7 +8126,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "12"
     },
     {
      "raw": [
@@ -7860,7 +8142,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Hello"
     },
     {
      "raw": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
@@ -7870,7 +8153,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
     },
     {
      "raw": null,
@@ -7898,6 +8182,7 @@
     "maxWords": 1
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -7937,7 +8222,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "hello"
     },
     {
      "raw": [
@@ -7955,7 +8241,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "a"
     },
     {
      "raw": [
@@ -7968,7 +8255,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": [],
@@ -7986,7 +8274,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "12"
     },
     {
      "raw": [
@@ -8001,7 +8290,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Hello"
     },
     {
      "raw": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
@@ -8011,7 +8301,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
     },
     {
      "raw": null,
@@ -8039,6 +8330,7 @@
     "maxWords": 3
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -8086,7 +8378,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "hello"
     },
     {
      "raw": [
@@ -8106,7 +8399,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "a, b, c"
     },
     {
      "raw": [
@@ -8119,7 +8413,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": [],
@@ -8137,7 +8432,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "12"
     },
     {
      "raw": [
@@ -8154,7 +8450,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Hello, hello, HELLO"
     },
     {
      "raw": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
@@ -8164,7 +8461,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
     },
     {
      "raw": null,
@@ -8192,6 +8490,7 @@
     "maxWords": 5
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -8251,7 +8550,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "hello"
     },
     {
      "raw": [
@@ -8273,7 +8573,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "a, b, c, d, e"
     },
     {
      "raw": [
@@ -8286,7 +8587,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": [],
@@ -8304,7 +8606,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "12"
     },
     {
      "raw": [
@@ -8322,7 +8625,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Hello, hello, HELLO, world"
     },
     {
      "raw": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
@@ -8332,7 +8636,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
     },
     {
      "raw": null,
@@ -8360,6 +8665,7 @@
     "maxWords": 2
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -8403,7 +8709,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "hello"
     },
     {
      "raw": [
@@ -8422,7 +8729,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "a, b"
     },
     {
      "raw": [
@@ -8435,7 +8743,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": [],
@@ -8453,7 +8762,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "12"
     },
     {
      "raw": [
@@ -8469,7 +8779,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Hello, hello"
     },
     {
      "raw": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
@@ -8479,7 +8790,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
     },
     {
      "raw": null,
@@ -8507,6 +8819,7 @@
     "maxWords": 2.5
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -8550,7 +8863,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "hello"
     },
     {
      "raw": [
@@ -8569,7 +8883,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "a, b"
     },
     {
      "raw": [
@@ -8582,7 +8897,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": [],
@@ -8600,7 +8916,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "12"
     },
     {
      "raw": [
@@ -8616,7 +8933,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Hello, hello"
     },
     {
      "raw": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
@@ -8626,7 +8944,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
     },
     {
      "raw": null,
@@ -8680,6 +8999,7 @@
     ],
     "label": "a → b → c"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "a",
     "b",
@@ -8726,7 +9046,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "c → b → a"
     },
     {
      "raw": [
@@ -8742,7 +9063,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a → b → c"
     },
     {
      "raw": [
@@ -8758,7 +9080,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "b → c → a"
     },
     {
      "raw": [
@@ -8822,7 +9145,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "b → a → c"
     }
    ]
   },
@@ -8867,6 +9191,7 @@
     ],
     "label": "a → 1"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "a",
     "1"
@@ -8906,7 +9231,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "1 → a"
     },
     {
      "raw": [
@@ -8920,7 +9246,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a → 1"
     },
     {
      "raw": [
@@ -8934,7 +9261,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a → 1"
     },
     {
      "raw": [
@@ -8991,7 +9319,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "a → 1"
     }
    ]
   },
@@ -9013,6 +9342,7 @@
     "text": ""
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "none"
@@ -9053,6 +9383,7 @@
     "text": "Hi"
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "none"
@@ -9095,6 +9426,7 @@
     "image": "/quiz-images/pic.png"
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "none"
@@ -9152,6 +9484,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -9190,7 +9523,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -9198,7 +9532,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -9206,7 +9541,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -9244,7 +9580,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -9283,6 +9620,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -9321,7 +9659,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -9329,7 +9668,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -9337,7 +9677,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -9375,7 +9716,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -9414,6 +9756,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -9452,7 +9795,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -9460,7 +9804,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -9468,7 +9813,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -9506,7 +9852,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -9545,6 +9892,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -9583,7 +9931,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -9591,7 +9940,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -9599,7 +9949,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -9637,7 +9988,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -9676,6 +10028,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -9714,7 +10067,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -9722,7 +10076,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -9730,7 +10085,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -9768,7 +10124,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -9805,6 +10162,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -9843,7 +10201,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -9851,7 +10210,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -9859,7 +10219,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -9897,7 +10258,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -9934,6 +10296,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -9972,7 +10335,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -9980,7 +10344,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -9988,7 +10353,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -10026,7 +10392,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -10065,6 +10432,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -10103,7 +10471,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -10111,7 +10480,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -10119,7 +10489,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -10157,7 +10528,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -10196,6 +10568,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -10234,7 +10607,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -10242,7 +10616,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -10250,7 +10625,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -10288,7 +10664,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -10325,6 +10702,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -10363,7 +10741,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -10371,7 +10750,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -10379,7 +10759,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -10417,7 +10798,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -10454,6 +10836,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -10492,7 +10875,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -10500,7 +10884,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -10508,7 +10893,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -10546,7 +10932,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -10583,6 +10970,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -10621,7 +11009,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -10629,7 +11018,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -10637,7 +11027,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -10675,7 +11066,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -10712,6 +11104,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -10750,7 +11143,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -10758,7 +11152,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -10766,7 +11161,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -10804,7 +11200,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -10841,6 +11238,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -10879,7 +11277,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -10887,7 +11286,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -10895,7 +11295,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -10933,7 +11334,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -10970,6 +11372,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -11008,7 +11411,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -11016,7 +11420,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -11024,7 +11429,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -11062,7 +11468,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -11099,6 +11506,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -11137,7 +11545,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -11145,7 +11554,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -11153,7 +11563,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -11191,7 +11602,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -11228,6 +11640,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -11266,7 +11679,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -11274,7 +11688,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -11282,7 +11697,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -11320,7 +11736,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -11357,6 +11774,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -11395,7 +11813,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -11403,7 +11822,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -11411,7 +11831,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -11449,7 +11870,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -11486,6 +11908,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -11524,7 +11947,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -11532,7 +11956,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -11540,7 +11965,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -11578,7 +12004,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -11615,6 +12042,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -11653,7 +12081,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -11661,7 +12090,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -11669,7 +12099,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -11707,7 +12138,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -11744,6 +12176,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -11782,7 +12215,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -11790,7 +12224,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -11798,7 +12233,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -11836,7 +12272,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -11873,6 +12310,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -11911,7 +12349,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -11919,7 +12358,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -11927,7 +12367,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -11965,7 +12406,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -12002,6 +12444,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -12040,7 +12483,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -12048,7 +12492,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -12056,7 +12501,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -12094,7 +12540,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -12131,6 +12578,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -12169,7 +12617,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -12177,7 +12626,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -12185,7 +12635,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -12223,7 +12674,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -12260,6 +12712,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -12298,7 +12751,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -12306,7 +12760,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -12314,7 +12769,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -12352,7 +12808,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -12389,6 +12846,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -12427,7 +12885,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -12435,7 +12894,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -12443,7 +12903,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -12481,7 +12942,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -12518,6 +12980,7 @@
     "index": 1,
     "label": "B"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "A",
     "B",
@@ -12556,7 +13019,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "A"
     },
     {
      "raw": 1,
@@ -12564,7 +13028,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     },
     {
      "raw": 2,
@@ -12572,7 +13037,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "C"
     },
     {
      "raw": -1,
@@ -12610,7 +13076,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "B"
     }
    ]
   },
@@ -12632,6 +13099,7 @@
     "text": "Welcome! We are reviewing units 1 to 3 today."
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "none"
@@ -12689,6 +13157,7 @@
     "index": 1,
     "label": "Mars"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "Venus",
     "Mars",
@@ -12732,7 +13201,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Venus"
     },
     {
      "raw": 1,
@@ -12740,7 +13210,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Mars"
     },
     {
      "raw": 2,
@@ -12748,7 +13219,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Jupiter"
     },
     {
      "raw": 3,
@@ -12756,7 +13228,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Mercury"
     },
     {
      "raw": -1,
@@ -12794,7 +13267,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Mars"
     }
    ]
   },
@@ -12833,6 +13307,7 @@
     "index": 0,
     "label": "True"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -12866,7 +13341,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -12874,7 +13350,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -12912,7 +13389,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -12960,6 +13438,7 @@
     ],
     "label": "11, 17"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "9",
     "11",
@@ -13011,7 +13490,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "9"
     },
     {
      "raw": [
@@ -13025,7 +13505,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "9, 11"
     },
     {
      "raw": [
@@ -13040,7 +13521,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "9, 11"
     },
     {
      "raw": [
@@ -13058,7 +13540,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "9, 11, 17, 21"
     },
     {
      "raw": [
@@ -13094,7 +13577,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "11, 17"
     },
     {
      "raw": [
@@ -13108,7 +13592,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "9, 21"
     },
     {
      "raw": [
@@ -13126,7 +13611,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "9, 11, 17, 21"
     },
     {
      "raw": [
@@ -13140,7 +13626,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "9, 11"
     },
     {
      "raw": 0,
@@ -13181,6 +13668,7 @@
     "value": 206,
     "label": "206"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "slider",
@@ -13218,7 +13706,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "100"
     },
     {
      "raw": 300,
@@ -13226,7 +13715,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "300"
     },
     {
      "raw": 206,
@@ -13234,7 +13724,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "206"
     },
     {
      "raw": 211,
@@ -13242,7 +13733,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "211"
     },
     {
      "raw": 201,
@@ -13250,7 +13742,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "201"
     },
     {
      "raw": 213.5,
@@ -13258,7 +13751,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "213.5"
     },
     {
      "raw": 198.5,
@@ -13266,7 +13760,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.5
-     }
+     },
+     "label": "198.5"
     },
     {
      "raw": 216,
@@ -13274,7 +13769,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "216"
     },
     {
      "raw": 221,
@@ -13282,7 +13778,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "221"
     },
     {
      "raw": 206.5,
@@ -13290,7 +13787,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "206.5"
     },
     {
      "raw": 99,
@@ -13306,7 +13804,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "206"
     },
     {
      "raw": "",
@@ -13332,7 +13831,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "206"
     },
     {
      "raw": {
@@ -13367,6 +13867,7 @@
     ],
     "label": "Au"
    },
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -13484,7 +13985,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Au"
     },
     {
      "raw": "AU",
@@ -13492,7 +13994,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "AU"
     },
     {
      "raw": " Au ",
@@ -13500,7 +14003,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Au"
     },
     {
      "raw": "Aux",
@@ -13508,7 +14012,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Aux"
     },
     {
      "raw": "Auxy",
@@ -13516,7 +14021,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Auxy"
     },
     {
      "raw": "Auxyz",
@@ -13524,7 +14030,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Auxyz"
     },
     {
      "raw": "xu",
@@ -13532,7 +14039,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "xu"
     },
     {
      "raw": "u",
@@ -13540,7 +14048,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "u"
     },
     {
      "raw": "uA",
@@ -13548,7 +14057,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "uA"
     },
     {
      "raw": "Au",
@@ -13556,7 +14066,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Au"
     },
     {
      "raw": "aurum",
@@ -13564,7 +14075,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "aurum"
     },
     {
      "raw": "AURUM",
@@ -13572,7 +14084,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "AURUM"
     },
     {
      "raw": " aurum ",
@@ -13580,7 +14093,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "aurum"
     },
     {
      "raw": "aurumx",
@@ -13588,7 +14102,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "aurumx"
     },
     {
      "raw": "aurumxy",
@@ -13596,7 +14111,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "aurumxy"
     },
     {
      "raw": "aurumxyz",
@@ -13604,7 +14120,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "aurumxyz"
     },
     {
      "raw": "xurum",
@@ -13612,7 +14129,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "xurum"
     },
     {
      "raw": "urum",
@@ -13620,7 +14138,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "urum"
     },
     {
      "raw": "murua",
@@ -13628,7 +14147,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "murua"
     },
     {
      "raw": "aurum",
@@ -13636,7 +14156,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "aurum"
     },
     {
      "raw": "gold",
@@ -13644,7 +14165,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "gold"
     },
     {
      "raw": "GOLD",
@@ -13652,7 +14174,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "GOLD"
     },
     {
      "raw": " gold ",
@@ -13660,7 +14183,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "gold"
     },
     {
      "raw": "goldx",
@@ -13668,7 +14192,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "goldx"
     },
     {
      "raw": "goldxy",
@@ -13676,7 +14201,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "goldxy"
     },
     {
      "raw": "goldxyz",
@@ -13684,7 +14210,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "goldxyz"
     },
     {
      "raw": "xold",
@@ -13692,7 +14219,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "xold"
     },
     {
      "raw": "old",
@@ -13700,7 +14228,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "old"
     },
     {
      "raw": "dlog",
@@ -13708,7 +14237,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "dlog"
     },
     {
      "raw": "gold",
@@ -13716,7 +14246,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "gold"
     },
     {
      "raw": "",
@@ -13742,7 +14273,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "42"
     },
     {
      "raw": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
@@ -13750,7 +14282,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
     },
     {
      "raw": [
@@ -13760,7 +14293,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "a"
     },
     {
      "raw": "totally wrong",
@@ -13768,7 +14302,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "totally wrong"
     }
    ]
   },
@@ -13823,6 +14358,7 @@
     ],
     "label": "Moon landing → Fall of the Berlin Wall → First iPhone → COVID-19 pandemic"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "Moon landing",
     "Fall of the Berlin Wall",
@@ -13876,7 +14412,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "COVID-19 pandemic → First iPhone → Fall of the Berlin Wall → Moon landing"
     },
     {
      "raw": [
@@ -13894,7 +14431,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Moon landing → Fall of the Berlin Wall → First iPhone → COVID-19 pandemic"
     },
     {
      "raw": [
@@ -13912,7 +14450,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "First iPhone → COVID-19 pandemic → Fall of the Berlin Wall → Moon landing"
     },
     {
      "raw": [
@@ -13983,7 +14522,8 @@
      "grade": {
       "correct": false,
       "ratio": 0.25
-     }
+     },
+     "label": "First iPhone → Fall of the Berlin Wall → Moon landing → COVID-19 pandemic"
     }
    ]
   },
@@ -14025,6 +14565,7 @@
     "text": "How did this unit feel?"
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": [
     "Too easy",
     "About right",
@@ -14068,7 +14609,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Too easy"
     },
     {
      "raw": 1,
@@ -14076,7 +14618,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "About right"
     },
     {
      "raw": 2,
@@ -14084,7 +14627,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Hard but fair"
     },
     {
      "raw": 3,
@@ -14092,7 +14636,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Too hard"
     },
     {
      "raw": -1,
@@ -14130,7 +14675,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "About right"
     }
    ]
   },
@@ -14154,6 +14700,7 @@
     "maxWords": 2
    },
    "answerView": null,
+   "noAnswerLabel": null,
    "choiceLabels": null,
    "summary": {
     "kind": "words",
@@ -14197,7 +14744,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "hello"
     },
     {
      "raw": [
@@ -14216,7 +14764,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "a, b"
     },
     {
      "raw": [
@@ -14229,7 +14778,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "x"
     },
     {
      "raw": [],
@@ -14247,7 +14797,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "12"
     },
     {
      "raw": [
@@ -14263,7 +14814,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "Hello, hello"
     },
     {
      "raw": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
@@ -14273,7 +14825,8 @@
      "grade": {
       "correct": null,
       "ratio": 0
-     }
+     },
+     "label": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwww"
     },
     {
      "raw": null,
@@ -14316,6 +14869,7 @@
     "index": 1,
     "label": "Mars"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "Venus",
     "Mars",
@@ -14359,7 +14913,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Venus"
     },
     {
      "raw": 1,
@@ -14367,7 +14922,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Mars"
     },
     {
      "raw": 2,
@@ -14375,7 +14931,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Jupiter"
     },
     {
      "raw": 3,
@@ -14383,7 +14940,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Mercury"
     },
     {
      "raw": -1,
@@ -14421,7 +14979,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Mars"
     }
    ]
   },
@@ -14460,6 +15019,7 @@
     "index": 0,
     "label": "True"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -14493,7 +15053,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -14501,7 +15062,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -14539,7 +15101,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -14580,6 +15143,7 @@
     "index": 2,
     "label": "Circle"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "Triangle",
     "Square",
@@ -14623,7 +15187,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Triangle"
     },
     {
      "raw": 1,
@@ -14631,7 +15196,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Square"
     },
     {
      "raw": 2,
@@ -14639,7 +15205,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Circle"
     },
     {
      "raw": 3,
@@ -14647,7 +15214,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Hexagon"
     },
     {
      "raw": -1,
@@ -14685,7 +15253,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Square"
     }
    ]
   },
@@ -14724,6 +15293,7 @@
     "index": 1,
     "label": "False"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "True",
     "False"
@@ -14757,7 +15327,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "True"
     },
     {
      "raw": 1,
@@ -14765,7 +15336,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     },
     {
      "raw": -1,
@@ -14803,7 +15375,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "False"
     }
    ]
   },
@@ -14842,6 +15415,7 @@
     "index": 0,
     "label": "Central Processing Unit"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "Central Processing Unit",
     "Computer Personal Unit",
@@ -14885,7 +15459,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "Central Processing Unit"
     },
     {
      "raw": 1,
@@ -14893,7 +15468,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Computer Personal Unit"
     },
     {
      "raw": 2,
@@ -14901,7 +15477,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Central Program Utility"
     },
     {
      "raw": 3,
@@ -14909,7 +15486,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Core Power Unit"
     },
     {
      "raw": -1,
@@ -14947,7 +15525,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Computer Personal Unit"
     }
    ]
   },
@@ -14986,6 +15565,7 @@
     "index": 3,
     "label": "HTML"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "Python",
     "Rust",
@@ -15029,7 +15609,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Python"
     },
     {
      "raw": 1,
@@ -15037,7 +15618,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Rust"
     },
     {
      "raw": 2,
@@ -15045,7 +15627,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Cobra"
     },
     {
      "raw": 3,
@@ -15053,7 +15636,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "HTML"
     },
     {
      "raw": -1,
@@ -15091,7 +15675,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "Rust"
     }
    ]
   },
@@ -15130,6 +15715,7 @@
     "index": 1,
     "label": "10"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "8",
     "10",
@@ -15173,7 +15759,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "8"
     },
     {
      "raw": 1,
@@ -15181,7 +15768,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "10"
     },
     {
      "raw": 2,
@@ -15189,7 +15777,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "12"
     },
     {
      "raw": 3,
@@ -15197,7 +15786,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "20"
     },
     {
      "raw": -1,
@@ -15235,7 +15825,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "10"
     }
    ]
   },
@@ -15274,6 +15865,7 @@
     "index": 2,
     "label": "O(log n)"
    },
+   "noAnswerLabel": null,
    "choiceLabels": [
     "O(n)",
     "O(n log n)",
@@ -15317,7 +15909,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "O(n)"
     },
     {
      "raw": 1,
@@ -15325,7 +15918,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "O(n log n)"
     },
     {
      "raw": 2,
@@ -15333,7 +15927,8 @@
      "grade": {
       "correct": true,
       "ratio": 1
-     }
+     },
+     "label": "O(log n)"
     },
     {
      "raw": 3,
@@ -15341,7 +15936,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "O(1)"
     },
     {
      "raw": -1,
@@ -15379,7 +15975,8 @@
      "grade": {
       "correct": false,
       "ratio": 0
-     }
+     },
+     "label": "O(n log n)"
     }
    ]
   }

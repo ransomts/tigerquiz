@@ -207,7 +207,7 @@ module Games
     def skip
       return start_question if @state == "question" && !Q.answerable?(question["type"])
 
-      end_question
+      end_question("host")
     end
 
     # Peer instruction: keep the first vote, ask the same question again, then
@@ -273,9 +273,22 @@ module Games
       @players.values.map { |p| { "name" => p.name, "score" => p.score, "connected" => p.connected } }
     end
 
+    # Standard competition ranking: equal scores share a rank and the next one
+    # skips, so three players tied on top are all 1st and the next is 4th.
+    # Ranking by position instead would have handed out 1st, 2nd and 3rd in the
+    # order people happened to join the lobby, since the players hash keeps
+    # insertion order and the sort below is stable.
     def leaderboard
+      rank = 0
+      prev = nil
       public_players.each_with_index.sort_by { |p, i| [-p["score"], i] }.map(&:first)
-                    .each_with_index.map { |p, i| p.merge("rank" => i + 1) }
+                    .each_with_index.map do |p, i|
+        if p["score"] != prev
+          rank = i + 1
+          prev = p["score"]
+        end
+        p.merge("rank" => rank)
+      end
     end
 
     def start_question(index = @q_index + 1)
@@ -334,11 +347,12 @@ module Games
       @answers[name] = { "response" => value, "ms" => now_ms - @question_start - @paused_ms }
       emit(host_stream, "game:answered", "answered" => @answers.size, "players" => @players.size)
       connected = @players.values.count(&:connected)
-      end_question if @answers.size >= connected
+      end_question("everyone") if @answers.size >= connected
       { "ok" => true }
     end
 
-    def end_question
+    # "time" the clock ran out, "host" the host moved on, "everyone" all answered
+    def end_question(ended_by = "time")
       return unless @state == "question"
 
       cancel_timer
@@ -407,7 +421,12 @@ module Games
 
       @players.each_value do |p|
         idx = board.index { |b| b["name"] == p.name }
-        ahead = idx > 0 ? board[idx - 1] : nil
+        # the nearest player actually ahead, not merely listed above: anyone on
+        # the same score is level, and "0 points behind" is not a gap to close
+        a = idx - 1
+        a -= 1 while a >= 0 && board[a]["score"] == p.score
+        ahead = a >= 0 ? board[a] : nil
+        level = board.select { |b| b["score"] == p.score && b["name"] != p.name }
         emit(player_stream(p.name), "game:results", {
           "type" => q["type"],
           "unscored" => unscored,
@@ -417,14 +436,22 @@ module Games
           "bonus" => p.last[:bonus],
           "streak" => p.streak || 0,
           "score" => p.score,
-          "rank" => idx + 1,
-          "prevRank" => p.prev_rank || idx + 1,
+          "rank" => board[idx]["rank"],
+          "prevRank" => p.prev_rank || board[idx]["rank"],
           "ahead" => ahead ? { "name" => ahead["name"], "gap" => ahead["score"] - p.score } : nil,
           "answer" => answer_view,
+          # read the player's own answer back to them: without it the phone shows
+          # the right answer with no reminder of what they actually picked, and
+          # quizzes with phoneText off never showed them the question either
+          "yourAnswer" => Q.response_label(q, p.last[:response], @pres),
           "explanation" => q["explanation"],
-          "answered" => !p.last[:response].nil?
+          "answered" => !p.last[:response].nil?,
+          # being level with someone is worth knowing, and the gap above cannot
+          # say so any more now that it skips players on the same score
+          "levelWith" => level.map { |b| b["name"] },
+          "endedBy" => ended_by
         })
-        p.prev_rank = idx + 1
+        p.prev_rank = board[idx]["rank"]
       end
     end
 
@@ -548,7 +575,7 @@ module Games
       return if !q || q["time"] <= 0 || @paused || @state != "question"
 
       gen = @timer_gen
-      @timer = @registry.schedule(remaining_ms + 250) { end_question if @timer_gen == gen }
+      @timer = @registry.schedule(remaining_ms + 250) { end_question("time") if @timer_gen == gen }
     end
 
     def cancel_timer

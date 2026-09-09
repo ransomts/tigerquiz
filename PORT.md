@@ -268,6 +268,11 @@ application.
   answer under someone else's name. The Node version trusted the socket alone.
 - A player who reconnects has the open question replayed by the server; the Node page re-joined
   by hand. A host who reconnects mid-results gets the results screen back, as before.
+- Ties share a rank and the phone's result screen explains itself, both ported across from `main`
+  after this branch forked: equal scores share a place and the next one skips, the phone reads back
+  what the player answered, and it says whether the clock ran out or the host moved on. The parity
+  fixture records `responseLabel` alongside `grade`, so the read-back is checked against the Node
+  original. Other commits landed on `main` since the fork; `git log ruby..main` lists them.
 - Question images stay in a directory (`quizzes/images/`, or `TIGERQUIZ_IMAGES`) served by a
   route, rather than moving to Active Storage. The editor never uploaded images; instructors
   drop files in a folder, and a folder is easier to back up and to serve from Apache directly.
