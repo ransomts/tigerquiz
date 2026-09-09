@@ -233,7 +233,9 @@ application.
 - [x] Phase 3: authentication. `Authentication` reads the header Apache sets, `InstructorController`
       is the base for everything students never touch, and `GET /api/me` shows who you are.
       Ownership scoping lands with each set of routes in phases 4 and 5.
-- [ ] Phase 4: editor and reports.
+- [x] Phase 4: editor and reports. The JSON API under `/api` keeps the Node paths, so the
+      editor and reports pages moved into views with their scripts nearly untouched. `api.js`
+      adds the CSRF token Rails expects. QR codes come from rqrcode; images from a directory.
 - [ ] Phase 5: game engine.
 - [ ] Phase 6: deployment.
 
