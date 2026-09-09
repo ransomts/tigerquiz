@@ -26,12 +26,23 @@ module Games
 
     def synchronize(&) = @monitor.synchronize(&)
 
+    # Raised rather than returned so a caller cannot open a room by ignoring it.
+    class TooManyGames < StandardError
+      def initialize(msg = "Too many games are open on this server") = super
+    end
+
     def create(quiz:, roster:, user:, bus: Bus.new, **room_options)
       synchronize do
+        # an unbounded number of rooms is an unbounded amount of memory, and every
+        # room holds its players, their answers and a timer until someone closes it
+        raise TooManyGames if @rooms.size >= max_rooms
+
         pin = make_pin
         @rooms[pin] = Room.new(pin: pin, quiz: quiz, roster: roster, user: user, bus: bus, registry: self, **room_options)
       end
     end
+
+    def max_rooms = Rails.application.config.tigerquiz.max_rooms
 
     def find(pin) = synchronize { @rooms[pin.to_s.strip] }
 

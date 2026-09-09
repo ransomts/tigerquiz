@@ -1,0 +1,12 @@
+#!/bin/bash -e
+
+# Bring the database up to date before serving. db:prepare creates it on the
+# first run and migrates it on later ones, so a fresh volume and an upgrade
+# both just work. Only when the command is actually the server: `docker run
+# ... bin/rails console` should not migrate anything out from under a
+# running container.
+case "${*}" in
+  *puma*|*"rails server"*) ./bin/rails db:prepare ;;
+esac
+
+exec "${@}"

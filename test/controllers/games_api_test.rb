@@ -36,6 +36,27 @@ class GamesApiTest < ActionDispatch::IntegrationTest
     assert_equal false, post_json("/api/games/resume", { pin: game["pin"], token: game["hostToken"] }, ALAN)["ok"], "another instructor cannot take over"
   end
 
+  test "only so many games may be open at once" do
+    with_max_rooms(2) do
+      2.times { assert_equal true, post_json("/api/games", { quizId: "sample" }, ADA)["ok"] }
+      full = post_json("/api/games", { quizId: "sample" }, ADA)
+      assert_equal false, full["ok"]
+      assert_equal "Too many games are open on this server", full["error"]
+      assert_equal 2, Games::Registry.pins.length, "the refused game left nothing behind"
+
+      Games::Registry.remove(Games::Registry.pins.first)
+      assert_equal true, post_json("/api/games", { quizId: "sample" }, ADA)["ok"], "closing one makes room for the next"
+    end
+  end
+
+  def with_max_rooms(n)
+    was = Rails.application.config.tigerquiz.max_rooms
+    Rails.application.config.tigerquiz.max_rooms = n
+    yield
+  ensure
+    Rails.application.config.tigerquiz.max_rooms = was
+  end
+
   test "a missing quiz or class list is refused" do
     assert_equal({ "ok" => false, "error" => "No such quiz" }, post_json("/api/games", { quizId: "does-not-exist" }, ADA))
     assert_equal({ "ok" => false, "error" => "No such quiz" }, post_json("/api/games", { quizId: "../server" }, ADA))

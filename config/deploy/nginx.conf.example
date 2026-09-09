@@ -1,0 +1,88 @@
+# nginx in front of tigerquiz, serving it from a sub-path with basic auth
+# instead of Shibboleth. This is the shape the Clemson instance runs behind
+# (https://brgr.cecas.clemson.edu/quiz/); config/deploy/apache.conf.example is
+# the Shibboleth version. Either way the same two rules hold:
+#
+#   1. The proxy decides who the user is and says so in X-Remote-User, and it
+#      overwrites any copy the client sent. The app trusts that header, so a
+#      client that could set it could be anybody.
+#   2. Puma listens only on a Unix socket, so nothing reaches the app except
+#      through here.
+#
+# Serving from /quiz/ means the app must be told, or every URL it builds will
+# point at the root of the domain. Set RAILS_RELATIVE_URL_ROOT=/quiz in
+# /etc/tigerquiz.env; config.ru mounts the app there, and the pages then build
+# their own URLs from it. proxy_pass below has no URI part on purpose, so the
+# prefix is passed through rather than stripped.
+
+upstream tigerquiz {
+    server unix:/run/tigerquiz/puma.sock;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name quiz.example.edu;
+
+    ssl_certificate     /etc/ssl/certs/quiz.example.edu.pem;
+    ssl_certificate_key /etc/ssl/private/quiz.example.edu.key;
+
+    # Phones on slow networks, and a quiz image is the largest thing served.
+    client_max_body_size 8m;
+
+    # Precompiled assets and the icons are plain files. Serving them here keeps
+    # them off the single Ruby process, which is busy running games.
+    location ^~ /quiz/assets/ {
+        alias /srv/tigerquiz/public/assets/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+    location ~ ^/quiz/(icon\.png|icon\.svg|robots\.txt)$ {
+        root /srv/tigerquiz/public;
+        rewrite ^/quiz/(.*)$ /$1 break;
+    }
+
+    # The websocket every screen holds open for the whole lesson. It carries no
+    # auth of its own: a player proves who they are with the token the join
+    # endpoint gave them, and a host with the token from creating the game.
+    location /quiz/cable {
+        proxy_pass http://tigerquiz;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Remote-User "";
+        proxy_set_header X-Remote-Name "";
+        # a question can sit open for minutes, and a lobby for longer
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+
+    # Students: the join page, joining, the lobby, nicknames and the QR code.
+    # No password — a PIN is what gets you into a game.
+    location ~ ^/quiz/(?:$|api/(?:join|lobby|nickname|qr\.svg)$|quiz-images/) {
+        proxy_pass http://tigerquiz;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        # a student is nobody in particular, and must not be able to claim otherwise
+        proxy_set_header X-Remote-User "";
+        proxy_set_header X-Remote-Name "";
+    }
+
+    # Instructors: everything else. Swap auth_basic for your SSO of choice and
+    # keep setting X-Remote-User from whatever it decides.
+    location /quiz/ {
+        auth_basic "tigerquiz";
+        auth_basic_user_file /etc/nginx/tigerquiz.htpasswd;
+
+        proxy_pass http://tigerquiz;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        # $remote_user is who basic auth just authenticated. Setting it here
+        # replaces anything the client sent, which is what makes it trustworthy.
+        proxy_set_header X-Remote-User $remote_user;
+        proxy_set_header X-Remote-Name "";
+    }
+}

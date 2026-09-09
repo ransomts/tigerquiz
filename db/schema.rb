@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_09_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_09_203000) do
   create_table "game_answers", force: :cascade do |t|
     t.boolean "correct"
     t.string "game_id", null: false
@@ -20,15 +20,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_09_120000) do
     t.integer "points", default: 0, null: false
     t.json "response"
     t.index ["game_id", "idx", "player"], name: "index_game_answers_on_game_id_and_idx_and_player", unique: true
-    t.index ["game_id"], name: "index_game_answers_on_game_id"
   end
 
   create_table "game_players", force: :cascade do |t|
+    t.integer "correct", default: 0, null: false
     t.string "game_id", null: false
     t.string "identifier"
     t.string "name", null: false
     t.integer "rank"
     t.integer "score", default: 0, null: false
+    t.integer "scored", default: 0, null: false
     t.index ["game_id", "name"], name: "index_game_players_on_game_id_and_name", unique: true
     t.index ["game_id"], name: "index_game_players_on_game_id"
   end

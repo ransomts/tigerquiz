@@ -26,6 +26,17 @@ module Tigerquiz
     # websocket must accept whatever origin the page itself was served from.
     config.action_cable.allow_same_origin_as_host = true
 
+    # Served from a sub-path behind a reverse proxy (https://host/quiz/) when
+    # RAILS_RELATIVE_URL_ROOT is set. config.ru mounts the app there, so routing
+    # sees the prefix; this makes the app generate URLs with it too. Action Cable
+    # is still mounted at /cable inside the app, but the page has to be told the
+    # full path to open the websocket on, which is what config.action_cable.url is.
+    if (relative_root = ENV["RAILS_RELATIVE_URL_ROOT"].presence)
+      relative_root = "/#{relative_root.delete_prefix("/").delete_suffix("/")}"
+      config.relative_url_root = relative_root
+      config.action_cable.url = "#{relative_root}#{config.action_cable.mount_path || "/cable"}"
+    end
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

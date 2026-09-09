@@ -149,17 +149,15 @@ class GameReport
   # identifier when there is one and the nickname otherwise, so a student can be
   # followed across sessions.
   def self.students(user)
+    # Player rows only. Summing the answers table here meant reading every answer
+    # of every game ever played, which grows with the years while this list does not.
     rows = GamePlayer.joins(:game).where(games: { user_id: user.id }).where.not(games: { ended_at: nil })
       .order("games.started_at DESC").includes(:game).to_a
-    correctness = GameAnswer.where(game_id: rows.map(&:game_id).uniq)
-      .group(:game_id, :player)
-      .pluck(:game_id, :player, Arel.sql("SUM(CASE WHEN correct = 1 THEN 1 ELSE 0 END)"), Arel.sql("SUM(CASE WHEN correct IS NOT NULL THEN 1 ELSE 0 END)"))
-      .to_h { |game_id, player, correct, scored| [[game_id, player], [correct, scored]] }
 
     by_who = {}
     rows.each do |p|
       who = p.identifier.presence || p.name
-      correct, scored = correctness[[p.game_id, p.name]] || [0, 0]
+      correct, scored = p.correct, p.scored
       entry = by_who[who] ||= { "who" => who, "nicknames" => [], "games" => [], "correct" => 0, "scored" => 0 }
       entry["nicknames"] << p.name unless entry["nicknames"].include?(p.name)
       entry["games"] << {

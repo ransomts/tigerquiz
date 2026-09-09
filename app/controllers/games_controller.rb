@@ -14,7 +14,7 @@ class GamesController < InstructorController
     room = Games::Registry.create(quiz: playable, roster: roster&.playable, user: current_user)
     Rails.logger.info("Room #{room.pin} created for \"#{playable["title"]}\" by #{current_user.eppn}")
     render json: room.describe.merge("ok" => true, "hostToken" => room.host_token)
-  rescue Tigerquiz::InvalidQuestion => e
+  rescue Tigerquiz::InvalidQuestion, Games::Registry::TooManyGames => e
     render json: { ok: false, error: e.message }
   end
 

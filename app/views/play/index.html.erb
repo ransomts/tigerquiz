@@ -159,7 +159,7 @@ function renderQuestion(q) {
   t.textContent = q.text || "";
   const img = $("qImage");
   img.hidden = !q.image;
-  img.src = q.image || "";
+  img.src = q.image ? appUrl(q.image) : "";
   // a second vote on the same question, after the class has discussed it
   $("prompt").textContent = q.revote ? "Discuss, then answer again" : PROMPTS[q.type] || "";
   $("submitRow").hidden = true;

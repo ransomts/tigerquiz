@@ -27,9 +27,11 @@ class ReportsApiTest < ActionDispatch::IntegrationTest
     @game.game_questions.create!(idx: 1, question_type: "choice", text: "Red planet?", answer: "Mars", choices: %w[Venus Mars Jupiter Saturn], explanation: "Iron oxide", source_idx: 0, correct_answer: 1)
     @game.game_questions.create!(idx: 2, question_type: "poll", text: "Favourite, honestly?", choices: %w[Mars Venus], source_idx: 2, correct_answer: nil)
     @game.game_questions.create!(idx: 3, question_type: "choice", text: "Biggest?", answer: "Jupiter", choices: %w[Earth Jupiter], source_idx: 3, correct_answer: 1)
-    @game.game_players.create!(name: "ada", identifier: "Ada Lovelace", score: 2900, rank: 1)
-    @game.game_players.create!(name: "alan", identifier: "Alan Turing", score: 1800, rank: 2)
-    @game.game_players.create!(name: "grace", identifier: "Grace Hopper", score: 900, rank: 3)
+    # correct and scored are what finishing a game writes onto the player row,
+    # counted here by hand from the answers below so the list has nothing to sum
+    @game.game_players.create!(name: "ada", identifier: "Ada Lovelace", score: 2900, rank: 1, correct: 3, scored: 3)
+    @game.game_players.create!(name: "alan", identifier: "Alan Turing", score: 1800, rank: 2, correct: 2, scored: 3)
+    @game.game_players.create!(name: "grace", identifier: "Grace Hopper", score: 900, rank: 3, correct: 1, scored: 3)
     rows = [
       [ 0, "ada", "Au", 1200, true, 970 ], [ 0, "alan", "au", 3000, true, 925 ], [ 0, "grace", "Ag", 2000, false, 0 ],
       [ 1, "ada", 1, 1000, true, 1075 ], [ 1, "alan", 0, 1500, false, 0 ], [ 1, "grace", 0, 900, false, 0 ],

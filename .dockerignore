@@ -1,0 +1,13 @@
+.git
+.gitignore
+/.bundle
+/vendor/bundle
+/log/*
+/tmp/*
+/storage/*
+/db/*.sqlite3*
+/test
+/docs
+/node_modules
+Dockerfile
+.dockerignore

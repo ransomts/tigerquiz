@@ -40,6 +40,20 @@ else
   port ENV.fetch("PORT", 3000)
 end
 
+# Games live in this process's memory, so a restart has already destroyed every
+# room that was open, and the rows they left behind can never finish or be
+# resumed. Sweep them as the server comes up. This belongs to booting the game
+# server and nothing else: a rake task or a console must not delete a game that
+# a running server is still playing.
+# Puma 8 renamed this hook and the Gemfile still allows older versions.
+send(respond_to?(:after_booted) ? :after_booted : :on_booted) do
+  swept = Game.sweep_unfinished!
+  Rails.logger.info("Swept #{swept} unfinished #{"game".pluralize(swept)} left by an earlier run") if swept > 0
+rescue StandardError => e
+  # a database that is not there yet must not stop the server booting
+  Rails.logger.warn("Could not sweep unfinished games: #{e.class}: #{e.message}")
+end
+
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart
 

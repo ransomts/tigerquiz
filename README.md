@@ -3,10 +3,12 @@
 A small self-hosted live quiz game in the style of Kahoot. One host screen on the
 projector, players join from their phones with a PIN, fastest correct answer scores most.
 
-This is the Ruby on Rails version, built to sit behind a department's Apache and
-Shibboleth single sign-on. Instructors sign in; students just need the PIN. The
-original Node version lives on the `main` branch, and `PORT.md` records how and why
-it was ported.
+This is the Ruby on Rails version, built to sit behind a department's single
+sign-on. Instructors sign in; students just need the PIN. The original Node version
+lives on the `main` branch, and `PORT.md` records how and why it was ported.
+
+New here? [Running a lesson with tigerquiz](docs/teaching-with-tigerquiz.md) walks
+through one game from start to finish, with screenshots.
 
 ## Run it on your own machine
 
@@ -37,6 +39,11 @@ bin/check             # validate every quiz file and class list in quizzes/
 node tools/smoke.mjs  # play a game over real websockets against a running server
 ```
 
+The screenshots in `docs/` are captured, not collected: `node tools/walkthrough-shots.mjs`
+plays a whole game against a running server, with a headless chromium as the host
+screen and four players joining over websockets, and writes all ten of them. Rerun
+it when the interface changes.
+
 Outside production, `TIGERQUIZ_DEV_USER` names the signed-in instructor when there
 is no single sign-on header. It defaults to `developer` in development.
 
@@ -61,6 +68,45 @@ See `PORT.md` for the reasoning.
 4. Open `https://quiz.example.edu/api/me` in a browser. It shows who the app thinks
    you are, which is the quickest check that the header wiring is right.
 5. Import any quiz files: `RAILS_ENV=production bin/rails 'quizzes:import[you@example.edu]'`.
+
+`config/deploy/nginx.conf.example` is the same deployment fronted by nginx with
+basic auth instead, which is also where to look if you serve the app from a
+sub-path rather than a whole domain.
+
+Whichever proxy you use, two things have to hold. The proxy sets `X-Remote-User`
+from whatever signed the instructor in **and strips any copy the client sent** —
+the app trusts that header, so anyone who could set it could be anyone. And Puma
+listens only on a Unix socket, so nothing reaches the app except through the proxy.
+
+`MAX_ROOMS` caps how many games may be open at once (200 by default). Each one
+holds its players, their answers and a timer until it finishes.
+
+### Serving from a sub-path
+
+To run the app at `https://example.edu/quiz/` rather than at the root of a domain,
+set `RAILS_RELATIVE_URL_ROOT=/quiz` in `/etc/tigerquiz.env` and have the proxy pass
+the prefix through rather than strip it. `config.ru` mounts the app there and every
+page builds its own URLs, the QR code included, from where it was mounted.
+
+### Coming from the Node version
+
+Quizzes and class lists are files, so `quizzes:import` picks them up as they are.
+The game reports only ever lived in SQLite, and come across with:
+
+```sh
+RAILS_ENV=production bin/rails 'quizzes:import_reports[you@example.edu,/srv/tigerquiz-node/data/tigerquiz.db]'
+```
+
+That reads the old database without writing to it, skips games that never finished,
+and can be run twice without importing anything twice. Import the quizzes first so
+each report links to the quiz it was played from.
+
+### With Docker
+
+`Dockerfile` and `docker-compose.example.yml` build and run the same thing in a
+container. Copy the compose file to `docker-compose.yml`, put a `SECRET_KEY_BASE`
+in `.env`, and `docker compose up -d`. Run one container and only one: two would
+each hold their own games, and a PIN would find the wrong one.
 
 The database is `storage/production.sqlite3`. Back it up with
 `sqlite3 storage/production.sqlite3 ".backup /somewhere/tigerquiz.sqlite3"`, which
@@ -245,3 +291,14 @@ contain a blocked run are allowed, so `Cassidy`, `classic` and `Scunthorpe` all 
 through. Players can press the dice button for a suggested name instead of inventing
 one. The host can remove anyone from the lobby with a click. To block more words, put
 them one per line in `quizzes/blocked-words.txt` and restart.
+
+## License
+
+tigerquiz is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See [LICENSE](LICENSE).
+
+It is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU General Public License for more details.

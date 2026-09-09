@@ -7,8 +7,14 @@
 //   node tools/smoke.mjs        # in another; BASE=http://host:port to point elsewhere
 const BASE = process.env.BASE || "http://127.0.0.1:3999";
 const WS = BASE.replace(/^http/, "ws") + "/cable";
-// in development the server signs requests in as the developer user, who owns the seeded quizzes
-const HOST = {};
+// The origin the app believes the page came from. Behind a TLS-terminating
+// proxy that is https even though this tool speaks http to it, and Action Cable
+// checks the two match: ORIGIN=https://quiz.example.edu to say so.
+const ORIGIN = process.env.ORIGIN || new URL(BASE).origin;
+// In development the server signs requests in as the developer user, who owns
+// the seeded quizzes. Against a production instance there is no such fallback,
+// so send the header the proxy would set: TIGERQUIZ_USER=you@example.edu.
+const HOST = process.env.TIGERQUIZ_USER ? { "X-Remote-User": process.env.TIGERQUIZ_USER } : {};
 
 let cookie = "";
 let csrf = "";
@@ -31,7 +37,9 @@ async function api(path, body, headers = {}) {
 }
 
 function cable(params) {
-  const ws = new WebSocket(WS, ["actioncable-v1-json"]);
+  // A browser always sends Origin, and in production Action Cable refuses a
+  // websocket without one. Send the origin the page would have been served from.
+  const ws = new WebSocket(WS, { protocols: ["actioncable-v1-json"], headers: { Origin: ORIGIN } });
   const identifier = JSON.stringify({ channel: "GameChannel", ...params });
   const events = [];
   const waiters = [];

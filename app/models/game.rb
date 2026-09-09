@@ -13,7 +13,18 @@ class Game < ApplicationRecord
   before_create { self.id ||= SecureRandom.uuid }
 
   scope :finished, -> { where.not(ended_at: nil) }
+  scope :unfinished, -> { where(ended_at: nil) }
   scope :newest_first, -> { order(started_at: :desc) }
+
+  # A game only reaches the reports once it has finished. Anything still
+  # unfinished belonged to a room that lived in this process's memory, and a
+  # restart has already destroyed it, so it can never finish or be resumed.
+  # Without this those rows accumulate on every restart: invisible in the
+  # reports, which filter on ended_at, but still carrying every player and
+  # answer they recorded. Returns how many were swept.
+  def self.sweep_unfinished!
+    unfinished.destroy_all.length
+  end
 
   def finished? = ended_at.present?
 
@@ -52,9 +63,24 @@ class Game < ApplicationRecord
 
   def finish!(board, question_count)
     transaction do
-      board.each { |p| game_players.where(name: p["name"]).update_all(score: p["score"], rank: p["rank"]) }
+      tallies = answer_tallies
+      board.each do |p|
+        correct, scored = tallies[p["name"]] || [ 0, 0 ]
+        game_players.where(name: p["name"])
+                    .update_all(score: p["score"], rank: p["rank"], correct: correct, scored: scored)
+      end
       update!(ended_at: Time.current, question_count: question_count, player_count: board.length)
     end
+  end
+
+  # How many scored questions each player got right, counted from the answers
+  # themselves rather than tallied as the game runs: replaying a question rewrites
+  # its answers, and a running total would then disagree with what it came from.
+  # Polls and word clouds have no correct answer and do not count either way.
+  def answer_tallies
+    game_answers.where.not(correct: nil).group(:player)
+                .pluck(:player, Arel.sql("SUM(CASE WHEN correct = 1 THEN 1 ELSE 0 END)"), Arel.sql("COUNT(*)"))
+                .to_h { |player, correct, scored| [ player, [ correct.to_i, scored.to_i ] ] }
   end
 
   # Abandon a game that never finished, so half-played rooms do not pile up.

@@ -7,7 +7,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <%# where the app is mounted, and where the websocket lives, for the scripts %>
+    <meta name="app-base" content="<%= app_base %>">
+    <%= action_cable_meta_tag %>
+    <link rel="icon" href="<%= app_base %>icon.svg" type="image/svg+xml">
     <%= stylesheet_link_tag "application" %>
     <%= yield :head %>
   </head>

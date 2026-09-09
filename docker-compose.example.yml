@@ -1,0 +1,43 @@
+# Minimal compose file for tigerquiz. Copy it to docker-compose.yml and adjust.
+#
+#   docker compose up -d
+#
+# quizzes/ and storage/ are mounted from the host so the question images and the
+# database of quizzes and reports survive rebuilding the image.
+#
+# One container, always. Games live in the process's memory, so a second replica
+# would hold its own games and a PIN would find the wrong one.
+
+services:
+  tigerquiz:
+    build: .
+    image: tigerquiz
+    container_name: tigerquiz
+    restart: unless-stopped
+
+    # Match the host user that owns quizzes/ and storage/, otherwise files the
+    # app writes are owned by root and you cannot touch them outside the container.
+    user: "1000:1000"
+
+    environment:
+      # Required. Generate one with: bin/rails secret
+      SECRET_KEY_BASE: "${SECRET_KEY_BASE:?set SECRET_KEY_BASE in .env}"
+      # The proxy in front sets this from whatever signed the instructor in, and
+      # strips any copy a client sent. Without a proxy nobody can reach the
+      # instructor pages at all, which is the safe way round.
+      TIGERQUIZ_USER_HEADER: X-Remote-User
+      # Set when the proxy serves the app from a sub-path rather than a domain root.
+      # RAILS_RELATIVE_URL_ROOT: /quiz
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - ./quizzes:/rails/quizzes
+      - ./storage:/rails/storage
+
+# Behind a reverse proxy on the same docker network, drop the ports mapping
+# above and let the proxy reach the container as tigerquiz:3000. The game is
+# then only reachable through the proxy instead of on a bare host port, which is
+# what makes the X-Remote-User header trustworthy. See config/deploy/ for
+# working nginx and Apache configurations.

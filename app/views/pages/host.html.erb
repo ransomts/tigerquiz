@@ -9,7 +9,7 @@
     <button id="createBtn" class="primary">Create game</button>
     <div id="setupErr" class="error"></div>
     <button id="rehearseBtn" class="linkbtn">Rehearse this quiz alone</button>
-    <p class="muted"><a href="/edit">Edit quizzes</a> · <a href="/reports">Past game reports</a></p>
+    <p class="muted"><a href="<%= edit_path %>">Edit quizzes</a> · <a href="<%= reports_path %>">Past game reports</a></p>
   </section>
 
   <section id="lobby" class="screen center">
@@ -103,8 +103,8 @@ renderMute();
 
 async function loadLists() {
   const [quizzes, rosters] = await Promise.all([
-    fetch("/api/quizzes").then((r) => r.json()),
-    fetch("/api/rosters").then((r) => r.json()),
+    api("/api/quizzes"),
+    api("/api/rosters"),
   ]);
   const sel = $("quizSel");
   sel.innerHTML = "";
@@ -160,9 +160,9 @@ function adopt(res) {
   phase = "lobby";
   $("lobbyTitle").textContent = res.title;
   $("lobbyPin").textContent = pin;
-  $("joinUrl").textContent = `${location.host}`;
+  $("joinUrl").textContent = `${location.host}${APP_BASE === "/" ? "" : APP_BASE.replace(/\/$/, "")}`;
   $("hostPin").textContent = `PIN ${pin}`;
-  $("qr").src = `/api/qr.svg?text=${encodeURIComponent(`${location.origin}/?pin=${pin}`)}`;
+  $("qr").src = appUrl(`/api/qr.svg?text=${encodeURIComponent(`${location.origin}${APP_BASE}?pin=${pin}`)}`);
   // students cannot reach "localhost"; tell the host before the lesson, not during it
   const local = /^(localhost|127\.|\[?::1)/i.test(location.hostname);
   const warn = $("addrWarn");
@@ -310,7 +310,7 @@ socket.on("game:question", (q) => {
   $("qText").textContent = q.text;
   const img = $("qImage");
   img.hidden = !q.image;
-  img.src = q.image || "";
+  img.src = q.image ? appUrl(q.image) : "";
   // the image and the answer area share the screen, so shrink the area when one is shown
   $("question").classList.toggle("has-image", !!q.image);
   $("skipBtn").textContent = q.type === "slide" ? "Continue" : "End question now";
