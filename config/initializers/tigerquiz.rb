@@ -3,8 +3,9 @@ Rails.application.config.tigerquiz = ActiveSupport::OrderedOptions.new.tap do |c
   # Apache sets this header from the Shibboleth session (see PORT.md).
   c.user_header = ENV.fetch("TIGERQUIZ_USER_HEADER", "X-Remote-User")
   c.name_header = ENV.fetch("TIGERQUIZ_NAME_HEADER", "X-Remote-Name")
-  # who you are when there is no header, in development and test only
-  c.dev_user = ENV.fetch("TIGERQUIZ_DEV_USER", "developer")
+  # who you are when there is no header. Development defaults to "developer";
+  # tests must set the header (or TIGERQUIZ_DEV_USER) explicitly; production never falls back.
+  c.dev_user = ENV["TIGERQUIZ_DEV_USER"].presence || (Rails.env.development? ? "developer" : nil)
   # quiz files to import, and the images they refer to
   c.quiz_dir = Pathname.new(ENV.fetch("TIGERQUIZ_QUIZZES", Rails.root.join("quizzes")))
   c.image_dir = Pathname.new(ENV.fetch("TIGERQUIZ_IMAGES", Rails.root.join("quizzes", "images")))

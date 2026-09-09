@@ -230,7 +230,9 @@ application.
 - [x] Phase 2: models and import. Quizzes and class lists live in the database as JSON
       documents owned by a user; `bin/rails quizzes:import[eppn]` loads the files, and
       `db/seeds.rb` does the same for the developer user.
-- [ ] Phase 3: authentication and ownership.
+- [x] Phase 3: authentication. `Authentication` reads the header Apache sets, `InstructorController`
+      is the base for everything students never touch, and `GET /api/me` shows who you are.
+      Ownership scoping lands with each set of routes in phases 4 and 5.
 - [ ] Phase 4: editor and reports.
 - [ ] Phase 5: game engine.
 - [ ] Phase 6: deployment.

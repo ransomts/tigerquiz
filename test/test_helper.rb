@@ -10,6 +10,9 @@ module ActiveSupport
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
 
-    # Add more helper methods to be used by all tests here...
+    # Requests made as a signed-in instructor carry the header Apache would set.
+    def as(eppn)
+      { "X-Remote-User" => eppn }
+    end
   end
 end
