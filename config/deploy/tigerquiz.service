@@ -1,0 +1,36 @@
+# systemd unit for tigerquiz behind Apache.
+#
+#   sudo cp config/deploy/tigerquiz.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now tigerquiz
+#
+# Assumes the app is checked out at /srv/tigerquiz and owned by a "tigerquiz"
+# user that Apache's www-data group can reach the socket of. Adjust the paths,
+# and put a real SECRET_KEY_BASE (bin/rails secret) in the environment file.
+[Unit]
+Description=tigerquiz live quiz game
+After=network.target
+
+[Service]
+Type=simple
+User=tigerquiz
+Group=www-data
+WorkingDirectory=/srv/tigerquiz
+Environment=RAILS_ENV=production
+Environment=PUMA_SOCKET=/run/tigerquiz/puma.sock
+Environment=RAILS_MAX_THREADS=8
+# Never run more than one process: every live game lives in this one (see PORT.md).
+Environment=WEB_CONCURRENCY=1
+EnvironmentFile=/etc/tigerquiz.env
+RuntimeDirectory=tigerquiz
+RuntimeDirectoryMode=0750
+UMask=0007
+ExecStart=/srv/tigerquiz/bin/rails server
+Restart=on-failure
+RestartSec=3
+# The database, uploads and logs live under the checkout; nothing else is written.
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

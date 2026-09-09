@@ -12,3 +12,8 @@ Rails.application.config.tigerquiz = ActiveSupport::OrderedOptions.new.tap do |c
   # how long a game waits for a host whose browser dropped
   c.host_grace_ms = Integer(ENV.fetch("HOST_GRACE_MS", 3 * 60 * 1000))
 end
+
+# Optional extra blocked nicknames, one per line. A missing file is fine.
+Rails.application.config.after_initialize do
+  Tigerquiz::Nicknames.load_extra_words(Rails.application.config.tigerquiz.quiz_dir.join("blocked-words.txt"))
+end

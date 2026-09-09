@@ -6,6 +6,6 @@ class ImagesController < ApplicationController
     path = Rails.application.config.tigerquiz.image_dir.join(name)
     return head :not_found unless name.present? && path.file?
 
-    send_file path, type: Marcel::MimeType.for(path), disposition: "inline"
+    send_file path, type: Rack::Mime.mime_type(File.extname(name), "application/octet-stream"), disposition: "inline"
   end
 end

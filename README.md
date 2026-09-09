@@ -1,43 +1,80 @@
 # tigerquiz
 
-> **Rails port in progress.** This branch is being ported from Node to Ruby on
-> Rails; see `PORT.md` for the plan and its status. The `npm` commands below
-> describe the Node version on `main` and no longer apply here. What works so far:
-> `bin/check` validates quizzes and `bin/test-lib` runs the logic tests.
-
 A small self-hosted live quiz game in the style of Kahoot. One host screen on the
 projector, players join from their phones with a PIN, fastest correct answer scores most.
 
-## Run
+This is the Ruby on Rails version, built to sit behind a department's Apache and
+Shibboleth single sign-on. Instructors sign in; students just need the PIN. The
+original Node version lives on the `main` branch, and `PORT.md` records how and why
+it was ported.
+
+## Run it on your own machine
+
+Needs Ruby 3.2 or newer with its headers (`ruby-dev` on Debian and Ubuntu) and a
+C compiler.
 
 ```sh
-npm install
-npm start          # http://localhost:3000
+bundle config set --local path vendor/bundle   # only if you cannot install gems system-wide
+bin/setup                                      # installs gems, prepares the database, starts the server
 ```
 
-- Host screen: `http://<your-ip>:3000/host.html`
+That starts the app at `http://localhost:3000` signed in as a developer user who
+owns the sample quizzes from `quizzes/`.
+
+- Host screen: `http://<your-ip>:3000/host`
 - Players: `http://<your-ip>:3000/` and enter the PIN (or `/?pin=123456`)
-- Editor: `http://<your-ip>:3000/edit.html`
-- Reports: `http://<your-ip>:3000/reports.html`
+- Editor: `http://<your-ip>:3000/edit`
+- Reports: `http://<your-ip>:3000/reports`
 
 Open the host screen by network name or IP, not `localhost`. The PIN and QR code
 that students see are built from the address in your browser bar, so a localhost
 address gives them a link they cannot reach. The lobby warns you when it spots this.
 
-Set `PORT` to change the port. Everyone must be able to reach the host machine on that
-port (same Wi-Fi, or put it behind a reverse proxy).
-
 ```sh
-npm test           # plays full games over websockets against a throwaway database
-npm run check      # validate every quiz and class list before a lesson
+bin/rails test        # the whole suite, including full games played through the engine
+bin/test-lib          # only the pure logic tests, no Rails needed
+bin/check             # validate every quiz file and class list in quizzes/
+node tools/smoke.mjs  # play a game over real websockets against a running server
 ```
+
+Outside production, `TIGERQUIZ_DEV_USER` names the signed-in instructor when there
+is no single sign-on header. It defaults to `developer` in development.
+
+## Deploy it for a department
+
+The app runs as one Puma process behind Apache. Apache terminates TLS, handles
+Shibboleth, and passes the signed-in user's identity to the app in a header. The
+app keeps every running game in memory, which is why there is exactly one process.
+See `PORT.md` for the reasoning.
+
+1. Check the code out, say at `/srv/tigerquiz`, owned by a `tigerquiz` user.
+   Run `bundle install`, `RAILS_ENV=production bin/rails db:prepare` and
+   `RAILS_ENV=production bin/rails assets:precompile`.
+2. Copy `config/deploy/tigerquiz.env.example` to `/etc/tigerquiz.env`, put a real
+   `SECRET_KEY_BASE` in it (`bin/rails secret`), and install
+   `config/deploy/tigerquiz.service` with systemd.
+3. Adapt `config/deploy/apache.conf.example`: the host name, the certificate, and
+   which Shibboleth attribute or group marks an instructor. It proxies to Puma's
+   Unix socket, upgrades `/cable` to a websocket, sets `X-Remote-User` from the
+   Shibboleth session, and requires a session only on instructor paths. Students'
+   phones never sign in.
+4. Open `https://quiz.example.edu/api/me` in a browser. It shows who the app thinks
+   you are, which is the quickest check that the header wiring is right.
+5. Import any quiz files: `RAILS_ENV=production bin/rails 'quizzes:import[you@example.edu]'`.
+
+The database is `storage/production.sqlite3`. Back it up with
+`sqlite3 storage/production.sqlite3 ".backup /somewhere/tigerquiz.sqlite3"`, which
+is safe while the app is running. Question images live in `quizzes/images/` or in
+the directory `TIGERQUIZ_IMAGES` names.
+
+Every instructor sees only their own quizzes, class lists and reports.
 
 ## Writing quizzes
 
-The easiest way is the editor at `/edit.html`. It lists your quizzes and class
-lists, edits every question type with the right fields for each, checks your work
-as you type, and saves back to `quizzes/`. It can also import questions you already
-have, either as pasted text or as CSV:
+The easiest way is the editor at `/edit`. It lists your quizzes and class lists,
+edits every question type with the right fields for each, checks your work as you
+type, and saves. It can also import questions you already have, either as pasted
+text or as CSV:
 
 ```
 Which planet is red?
@@ -50,8 +87,9 @@ Blank lines separate questions and `*` marks the correct answer. Prefix a line w
 `T/F` for a true or false question. The CSV form takes a `question` column, up to
 four `choice` columns, and an `answer` column numbered from one.
 
-Everything below describes the file format, which you only need if you would rather
-write it by hand. Drop a JSON file in `quizzes/`. The filename becomes the quiz id.
+Everything below describes the JSON format, which you only need if you would rather
+write quizzes by hand and import them. Drop a file in `quizzes/`; the file name becomes
+the quiz's short name.
 
 ```json
 {
@@ -76,12 +114,12 @@ Quiz-level fields:
 | `phoneText` | Mirror the question and choices onto phones, on by default. Set `false` for the classic projector-only look |
 
 Every question takes `text`, an optional `time` in seconds, and an optional `image`
-naming a file in `quizzes/images/` or an `http(s)` URL. Two more are worth setting
+naming a file in the images directory or an `http(s)` URL. Two more are worth setting
 on anything you actually teach with:
 
 | Field | Meaning |
 | --- | --- |
-| `explanation` | Shown to everyone once the answer is revealed, and kept in the report. This is what turns a wrong answer into something learned, so `npm run check` warns when it is missing |
+| `explanation` | Shown to everyone once the answer is revealed, and kept in the report. This is what turns a wrong answer into something learned, so `bin/check` warns when it is missing |
 | `discuss` | Marks a question as worth a peer-instruction round, highlighting the re-vote button on the host screen |
 
 The rest depends on `type`.
@@ -102,12 +140,12 @@ The rest depends on `type`.
 
 `quizzes/all-types.json` demonstrates all nine.
 
-Quizzes are validated when a game is created. A bad answer index or a malformed
-question is reported on the host screen instead of failing mid-game.
+Quizzes are validated when saved and when a game is created. A bad answer index or a
+malformed question is reported in the editor instead of failing mid-game.
 
 ## Class lists
 
-Use the editor, or put a roster in `quizzes/rosters/` by hand:
+Use the editor, or write a roster by hand in `quizzes/rosters/` and import it:
 
 ```json
 {
@@ -151,13 +189,15 @@ arrow keys move between questions, and `P` pauses.
 If the host's browser disconnects, the game is paused and held open for three
 minutes rather than destroyed, and players are told the host is away. Reopening
 the host page rejoins the same game automatically and puts the screen back where
-it was. Set `HOST_GRACE_MS` to change how long a game waits.
+it was. A player whose phone drops gets the open question back when it reconnects.
+Set `HOST_GRACE_MS` to change how long a game waits.
 
-## Checking quizzes
+## Checking quiz files
 
 ```sh
-npm run check              # every quiz and class list
-npm run check -- my-quiz   # one quiz, by id or path
+bin/check                    # every quiz file and class list in quizzes/
+bin/check my-quiz            # one quiz, by short name or path
+bin/rails quizzes:check      # the same, through Rails
 ```
 
 Errors are things that would break a game: a bad answer index, duplicate choices,
@@ -193,9 +233,9 @@ separate game.
 
 **Review quizzes.** "Make a review quiz" on a report writes a new quiz containing
 the questions that class did worst on, ordered worst first, with explanations kept.
-It lands in `quizzes/` and shows up in the host list, so the next lesson can open
-with spaced retrieval of exactly what was missed. Questions are matched back to the
-original file by their recorded position, so answer shuffling does not confuse it.
+It shows up in the host list, so the next lesson can open with spaced retrieval of
+exactly what was missed. Questions are matched back to the original by their
+recorded position, so answer shuffling does not confuse it.
 
 ## Nicknames
 
@@ -203,36 +243,5 @@ Nicknames are screened against a word list before anyone joins. Disguises are
 collapsed first, so `sh1t` and `a$$` are caught, and ordinary words that happen to
 contain a blocked run are allowed, so `Cassidy`, `classic` and `Scunthorpe` all get
 through. Players can press the dice button for a suggested name instead of inventing
-one. No list is complete, so the host can still remove anyone from the lobby with a
-click. Add your own words, one per line, in `quizzes/blocked-words.txt`.
-
-## Reports
-
-Every finished game is saved to `data/tigerquiz.db`, a SQLite file. Open
-`/reports.html` for the list.
-
-Each report shows the class average, the questions fewer than half the class got right,
-a per-question breakdown with correct rate and average response time, and a per-player
-table with scores and identifiers. "Download CSV" gives one row per player per question,
-for grading or a spreadsheet.
-
-Games the host abandons before the final standings are discarded rather than saved.
-Set `TIGERQUIZ_DATA` to store the database somewhere else.
-
-## Host screen
-
-- A QR code in the lobby encodes the join link, so players can scan instead of typing.
-- Sound effects (question start, final five seconds, time up, answer reveal, podium
-  fanfare) are synthesized in the browser, no audio files needed. Toggle them with the
-  button in the footer; the choice is remembered.
-- The game ends on an animated podium revealing third, second, then first place.
-
-## Notes
-
-- Live game state lives in memory; restarting the server ends games in progress.
-- A dropped host can rejoin, but a restarted server cannot be rejoined.
-- Finished games are saved to disk and survive a restart.
-- Players who refresh mid-game rejoin under the same nickname automatically.
-- Closing the host tab ends the game for everyone.
-- Sound needs a click before it can play, so the host must press "Create game" (any
-  click works) before the first question. This is a browser autoplay rule.
+one. The host can remove anyone from the lobby with a click. To block more words, put
+them one per line in `quizzes/blocked-words.txt` and restart.

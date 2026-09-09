@@ -240,9 +240,19 @@ application.
       `GameChannel`, the create/resume/join/lobby endpoints, and the host and player pages on a
       small Action Cable shim (`game-socket.js`). `test/games/room_test.rb` plays whole games the
       way `test/game.test.mjs` did; `tools/smoke.mjs` does it over real websockets.
-- [ ] Phase 6: deployment.
+- [x] Phase 6: deployment. Puma binds a Unix socket when `PUMA_SOCKET` is set; `config/deploy/`
+      has the systemd unit, an environment file and the Apache configuration with the
+      Shibboleth and websocket wiring. The README is rewritten for the Rails version.
 
-### Notes from phase 1
+#### What changed from the plan
+
+- The engine lives in `app/services/games/` rather than `lib/tigerquiz/`, because a room
+  writes the game's rows through the models and broadcasts through Action Cable.
+- Images stay in a directory instead of Active Storage (see below).
+- Development skips the websocket origin check so phones on the LAN and scripts can connect;
+  production accepts only the origin the page came from.
+
+## Notes from the port
 
 - The Ruby port keeps JavaScript's loose coercions on purpose (`"time": "15"`, `"answer": "true"`),
   because existing quiz files rely on them. `Questions.js_num` and `Questions.js_str` are where

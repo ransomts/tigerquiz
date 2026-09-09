@@ -32,8 +32,13 @@ threads threads_count, threads_count
 # process. Never set WEB_CONCURRENCY above 1 (see PORT.md).
 workers 0
 
-# Specifies the `port` that Puma will listen on to receive requests; default is 3000.
-port ENV.fetch("PORT", 3000)
+# Behind Apache, listen on a Unix socket that only Apache can reach (see
+# config/deploy/apache.conf.example). Otherwise, a TCP port for development.
+if ENV["PUMA_SOCKET"]
+  bind "unix://#{ENV["PUMA_SOCKET"]}"
+else
+  port ENV.fetch("PORT", 3000)
+end
 
 # Allow puma to be restarted by `bin/rails restart` command.
 plugin :tmp_restart

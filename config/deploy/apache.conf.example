@@ -1,0 +1,65 @@
+# Apache in front of tigerquiz: TLS, Shibboleth, and a proxy to Puma's socket.
+#
+# Needs: mod_ssl, mod_proxy, mod_proxy_http, mod_proxy_wstunnel, mod_headers,
+# mod_shib (shibboleth2). Enable with a2enmod, then drop this into
+# sites-available, fix the host name and paths, and a2ensite it.
+#
+# Two things matter for the app's trust model:
+#   1. Apache sets X-Remote-User from the Shibboleth session on every request
+#      it proxies, and strips any copy a client sent, so the app can trust it.
+#   2. Puma listens only on a Unix socket, so nothing bypasses Apache.
+
+<VirtualHost *:443>
+    ServerName quiz.example.edu
+    SSLEngine on
+    SSLCertificateFile    /etc/ssl/certs/quiz.example.edu.pem
+    SSLCertificateKeyFile /etc/ssl/private/quiz.example.edu.key
+
+    # Precompiled assets and the icons are plain files; let Apache serve them.
+    DocumentRoot /srv/tigerquiz/public
+    <Directory /srv/tigerquiz/public>
+        Require all granted
+        Options -Indexes
+    </Directory>
+    ProxyPassMatch "^/assets/" "!"
+    ProxyPassMatch "^/(icon\.png|icon\.svg|robots\.txt)$" "!"
+
+    # The websocket, then everything else, to Puma.
+    ProxyPreserveHost On
+    ProxyPass        /cable unix:/run/tigerquiz/puma.sock|ws://localhost/cable
+    ProxyPassReverse /cable unix:/run/tigerquiz/puma.sock|ws://localhost/cable
+    ProxyPass        /      unix:/run/tigerquiz/puma.sock|http://localhost/
+    ProxyPassReverse /      unix:/run/tigerquiz/puma.sock|http://localhost/
+    RequestHeader set X-Forwarded-Proto "https"
+
+    # Identity: never trust the client's copy, always set from Shibboleth.
+    RequestHeader unset X-Remote-User
+    RequestHeader unset X-Remote-Name
+    RequestHeader set X-Remote-User "%{REMOTE_USER}s" env=REMOTE_USER
+    RequestHeader set X-Remote-Name "%{displayName}e" env=displayName
+
+    # Instructor pages require a session. Students and their phones do not:
+    # they join by PIN at /, look games up at /api/lobby, join at /api/join,
+    # and stay connected through /cable.
+    <Location />
+        AuthType shibboleth
+        ShibRequestSetting requireSession false
+        Require shibboleth
+    </Location>
+    <LocationMatch "^/(host|edit|reports|api/(me|quizzes|quiz|quiz-check|rosters|roster|reports|students|games))">
+        AuthType shibboleth
+        ShibRequestSetting requireSession true
+        ShibUseHeaders Off
+        Require shib-session
+        # Optionally restrict to the department, e.g. by affiliation or a group attribute:
+        # Require shib-attr affiliation ~ ^(faculty|staff)@example\.edu$
+    </LocationMatch>
+    <Location /Shibboleth.sso>
+        SetHandler shib
+    </Location>
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName quiz.example.edu
+    Redirect permanent / https://quiz.example.edu/
+</VirtualHost>
