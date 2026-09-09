@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # players
+  root "play#index"
+
   # instructor pages
   get "host", to: "pages#host"
   get "edit", to: "pages#edit"
@@ -24,7 +27,11 @@ Rails.application.routes.draw do
     get "reports/:id/csv", to: "reports#csv"
     post "reports/:id/review-quiz", to: "reports#review_quiz"
     delete "reports/:id", to: "reports#destroy"
+    post "games", to: "games#create"
+    post "games/resume", to: "games#resume"
     # public: players and the lobby screen use these
+    post "join", to: "play#join"
+    post "lobby", to: "play#lobby"
     get "nickname", to: "nicknames#show"
     get "qr.svg", to: "qr#show", format: false
   end

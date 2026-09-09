@@ -1,0 +1,419 @@
+<% content_for :title, "tigerquiz" %>
+<div id="pausedBanner" class="banner" hidden>Paused by the host</div>
+<main>
+  <section id="join" class="screen center active">
+    <h1>tigerquiz</h1>
+    <input id="pin" inputmode="numeric" pattern="[0-9]*" placeholder="Game PIN" maxlength="6" autocomplete="off">
+    <div id="gameTitle" class="muted"></div>
+    <div class="namerow">
+      <input id="name" placeholder="Nickname" maxlength="20" autocomplete="off">
+      <button id="diceBtn" class="dice" title="Suggest a nickname">🎲</button>
+    </div>
+    <input id="ident" placeholder="" maxlength="40" autocomplete="off" hidden>
+    <button id="joinBtn" class="primary">Join</button>
+    <div id="joinErr" class="error"></div>
+  </section>
+
+  <section id="wait" class="screen center">
+    <h2>You're in, <span id="waitName"></span>!</h2>
+    <p class="muted">Watch the host screen. Questions appear here.</p>
+  </section>
+
+  <section id="question" class="screen">
+    <div class="hud"><span id="qCount"></span><span id="qTimer"></span></div>
+    <div class="timerbar"><div id="qBar"></div></div>
+    <h2 id="qText" class="qtext" hidden></h2>
+    <img id="qImage" class="qimg" alt="" hidden>
+    <div id="prompt" class="prompt muted"></div>
+    <div id="answerArea"></div>
+    <div id="submitRow" class="row" hidden><button id="submitBtn" class="primary" disabled>Submit</button></div>
+  </section>
+
+  <section id="answered" class="screen center">
+    <h2 id="answeredTitle">Answer locked in</h2>
+    <p class="muted">Waiting for everyone else…</p>
+  </section>
+
+  <section id="result" class="screen">
+    <div id="resultBox" class="fill">
+      <div id="resultTitle" class="big"></div>
+      <div id="resultStreak" class="streak" hidden></div>
+      <div id="resultPts" style="font-size:1.5rem"></div>
+      <div id="resultRank" class="rankline"></div>
+      <div id="resultGap" class="muted"></div>
+      <p id="resultExplain" class="explain" hidden></p>
+    </div>
+  </section>
+
+  <section id="end" class="screen center">
+    <h1>Game over</h1>
+    <div id="endRank" class="big"></div>
+    <div id="endScore" style="font-size:1.5rem"></div>
+    <button id="againBtn">Join another game</button>
+  </section>
+</main>
+<footer><span id="me"></span><span id="status" class="muted"></span></footer>
+
+<%= javascript_include_tag "api", "actioncable", "game-socket" %>
+<script>
+const SYMS = ["▲", "◆", "●", "■"];
+const $ = (id) => document.getElementById(id);
+const show = (id) => {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.id === id));
+};
+
+const socket = gameSocket();
+let me = null;
+let timerHandle = null;
+let pending = null; // answer being composed for types with a Submit button
+let paused = false;
+let lastQuestion = null;
+
+function renderPaused() {
+  $("pausedBanner").hidden = !paused;
+  document.body.classList.toggle("is-paused", paused);
+}
+
+// prefill PIN from ?pin=
+const params = new URLSearchParams(location.search);
+if (params.get("pin")) $("pin").value = params.get("pin");
+try {
+  const saved = JSON.parse(sessionStorage.getItem("tigerquiz") || "null");
+  if (saved) { $("pin").value = saved.pin; $("name").value = saved.name; if (saved.identifier) $("ident").value = saved.identifier; }
+} catch {}
+
+// ---------- joining ----------
+// Look the game up as soon as a full PIN is typed, so we know whether this
+// quiz asks for a student name or ID before the player hits Join.
+let lookupTimer = null;
+function lookup() {
+  const pin = $("pin").value.trim();
+  if (pin.length < 4) { $("gameTitle").textContent = ""; $("ident").hidden = true; return; }
+  api("/api/lobby", { method: "POST", body: { pin } }).then((res) => {
+    if (!res.ok) { $("gameTitle").textContent = ""; $("ident").hidden = true; return; }
+    $("gameTitle").textContent = res.title;
+    $("ident").hidden = !res.identifier;
+    if (res.identifier) $("ident").placeholder = res.identifier;
+  });
+}
+$("pin").addEventListener("input", () => { clearTimeout(lookupTimer); lookupTimer = setTimeout(lookup, 250); });
+if ($("pin").value) lookup();
+
+async function join() {
+  const pin = $("pin").value.trim();
+  const name = $("name").value.trim();
+  const identifier = $("ident").hidden ? "" : $("ident").value.trim();
+  $("joinErr").textContent = "";
+  const res = await api("/api/join", { method: "POST", body: { pin, name, identifier } });
+  if (!res.ok) { $("joinErr").textContent = res.error; return; }
+  me = { pin, name: res.name, identifier };
+  try { sessionStorage.setItem("tigerquiz", JSON.stringify(me)); } catch {}
+  $("me").textContent = `${res.name} · ${pin}`;
+  $("waitName").textContent = res.name;
+  if (res.state === "question" && res.question) {
+    if (res.answered) show("answered");
+    else renderQuestion(res.question);
+  } else if (res.state === "end") {
+    show("end");
+  } else {
+    show("wait");
+  }
+  // from here on the game talks to this phone over the channel, which reconnects by itself
+  socket.subscribe({ pin, role: "player", name: res.name, token: res.token }).catch(() => {
+    $("status").textContent = "Could not connect to the game";
+  });
+}
+// offer a name rather than making everyone invent one
+$("diceBtn").onclick = async () => {
+  try {
+    const res = await api("/api/nickname");
+    if (res.name) { $("name").value = res.name; $("joinErr").textContent = ""; }
+  } catch { /* offline; the player can type their own */ }
+};
+
+$("joinBtn").onclick = join;
+$("name").addEventListener("keydown", (e) => e.key === "Enter" && join());
+$("ident").addEventListener("keydown", (e) => e.key === "Enter" && join());
+$("pin").addEventListener("keydown", (e) => e.key === "Enter" && $("name").focus());
+$("againBtn").onclick = () => { socket.unsubscribe(); me = null; show("join"); };
+
+// ---------- answer inputs, one builder per question type ----------
+const PROMPTS = {
+  choice: "", truefalse: "", multi: "Pick every correct answer", poll: "Your opinion, no wrong answer",
+  slider: "Drag to your best guess", text: "Type your answer", wordcloud: "Type a word",
+  order: "Tap the items in the right order", slide: "",
+};
+
+function renderQuestion(q) {
+  const area = $("answerArea");
+  area.className = "";
+  area.innerHTML = "";
+  pending = null;
+  paused = !!q.paused;
+  renderPaused();
+
+  // the quiz can mirror the question onto phones, for anyone who cannot read the projector
+  const t = $("qText");
+  t.hidden = !q.text;
+  t.textContent = q.text || "";
+  const img = $("qImage");
+  img.hidden = !q.image;
+  img.src = q.image || "";
+  // a second vote on the same question, after the class has discussed it
+  $("prompt").textContent = q.revote ? "Discuss, then answer again" : PROMPTS[q.type] || "";
+  $("submitRow").hidden = true;
+  $("submitBtn").disabled = true;
+  $("submitBtn").textContent = "Submit";
+
+  const builder = BUILDERS[q.type] || BUILDERS.choice;
+  builder(q, area);
+
+  if (q.index != null) $("qCount").textContent = `Q${q.index + 1} / ${q.total}`;
+  startTimer(q.endsAt, q.totalMs);
+  show("question");
+}
+
+const BUILDERS = {
+  choice: (q, area) => buildButtons(q, area, (i) => answer(i)),
+  truefalse: (q, area) => buildButtons(q, area, (i) => answer(i)),
+  poll: (q, area) => buildButtons(q, area, (i) => answer(i)),
+
+  multi: (q, area) => {
+    const chosen = new Set();
+    const grid = buildButtons(q, area, null);
+    [...grid.children].forEach((b, i) => {
+      b.onclick = () => {
+        chosen.has(i) ? chosen.delete(i) : chosen.add(i);
+        b.classList.toggle("picked", chosen.has(i));
+        pending = [...chosen];
+        $("submitBtn").disabled = chosen.size === 0;
+      };
+    });
+    $("submitRow").hidden = false;
+  },
+
+  slider: (q, area) => {
+    area.className = "pad";
+    const wrap = document.createElement("div");
+    wrap.className = "sliderbox";
+    const out = document.createElement("div");
+    out.className = "sliderval";
+    const input = document.createElement("input");
+    input.type = "range";
+    input.min = q.min; input.max = q.max; input.step = q.step;
+    input.value = Math.round((q.min + q.max) / 2 / q.step) * q.step;
+    const ends = document.createElement("div");
+    ends.className = "sliderends muted";
+    ends.innerHTML = `<span></span><span></span>`;
+    ends.firstChild.textContent = `${q.min}${q.unit ? " " + q.unit : ""}`;
+    ends.lastChild.textContent = `${q.max}${q.unit ? " " + q.unit : ""}`;
+    const sync = () => { out.textContent = `${input.value}${q.unit ? " " + q.unit : ""}`; pending = Number(input.value); };
+    input.oninput = sync;
+    sync();
+    $("submitBtn").disabled = false;
+    wrap.append(out, input, ends);
+    area.appendChild(wrap);
+    $("submitRow").hidden = false;
+  },
+
+  text: (q, area) => {
+    area.className = "pad";
+    const input = document.createElement("input");
+    input.className = "answerinput";
+    input.placeholder = "Your answer";
+    input.maxLength = 80;
+    input.autocomplete = "off";
+    input.oninput = () => { pending = input.value; $("submitBtn").disabled = !input.value.trim(); };
+    input.onkeydown = (e) => { if (e.key === "Enter" && input.value.trim()) submit(); };
+    area.appendChild(input);
+    $("submitRow").hidden = false;
+    setTimeout(() => input.focus(), 50);
+  },
+
+  wordcloud: (q, area) => {
+    area.className = "pad";
+    const inputs = [];
+    for (let i = 0; i < (q.maxWords || 1); i++) {
+      const input = document.createElement("input");
+      input.className = "answerinput";
+      input.placeholder = q.maxWords > 1 ? `Word ${i + 1}` : "One word";
+      input.maxLength = 30;
+      input.autocomplete = "off";
+      input.oninput = () => {
+        pending = inputs.map((x) => x.value.trim()).filter(Boolean);
+        $("submitBtn").disabled = pending.length === 0;
+      };
+      inputs.push(input);
+      area.appendChild(input);
+    }
+    $("submitRow").hidden = false;
+    setTimeout(() => inputs[0].focus(), 50);
+  },
+
+  order: (q, area) => {
+    area.className = "orderlist";
+    const picked = [];
+    const buttons = q.items.map((label, i) => {
+      const b = document.createElement("button");
+      b.className = "orderitem";
+      b.innerHTML = `<span class="pos"></span><span class="label"></span>`;
+      b.querySelector(".label").textContent = label;
+      b.onclick = () => {
+        const at = picked.indexOf(i);
+        if (at >= 0) picked.splice(at, 1); else picked.push(i);
+        redraw();
+      };
+      area.appendChild(b);
+      return b;
+    });
+    const redraw = () => {
+      buttons.forEach((b, i) => {
+        const at = picked.indexOf(i);
+        b.classList.toggle("picked", at >= 0);
+        b.querySelector(".pos").textContent = at >= 0 ? at + 1 : "";
+      });
+      pending = picked.length === q.items.length ? [...picked] : null;
+      $("submitBtn").disabled = !pending;
+      $("submitBtn").textContent = pending ? "Submit" : `Tap ${q.items.length - picked.length} more`;
+    };
+    redraw();
+    $("submitRow").hidden = false;
+  },
+
+  slide: (q, area) => {
+    area.className = "pad center";
+    const p = document.createElement("p");
+    p.className = "muted";
+    p.textContent = "Look at the host screen.";
+    area.appendChild(p);
+  },
+};
+
+/** The shared coloured-button grid used by every choice-shaped type. */
+function buildButtons(q, area, onClick) {
+  const n = typeof q.choices === "number" ? q.choices : q.choices.length;
+  const grid = document.createElement("div");
+  grid.className = "grid" + (n === 2 ? " two" : "");
+  for (let i = 0; i < n; i++) {
+    const b = document.createElement("button");
+    b.className = `choice c${i}`;
+    b.innerHTML = `<span class="sym">${SYMS[i] ?? i + 1}</span>`;
+    // labels are shown when knowing them cannot give the answer away
+    if (q.labels && q.labels[i]) {
+      const t = document.createElement("span");
+      t.className = "tf";
+      t.textContent = q.labels[i];
+      b.appendChild(t);
+    }
+    if (onClick) b.onclick = () => onClick(i);
+    grid.appendChild(b);
+  }
+  area.appendChild(grid);
+  return grid;
+}
+
+$("submitBtn").onclick = () => submit();
+function submit() {
+  if (pending == null) return;
+  answer(pending);
+}
+
+/** totalMs keeps the bar proportional to the whole question, not to what is left. */
+function startTimer(endsAt, totalMs) {
+  clearInterval(timerHandle);
+  if (!endsAt) {
+    $("qTimer").textContent = paused ? "paused" : "";
+    if (!paused) $("qBar").style.width = "100%";
+    return;
+  }
+  const total = Math.max(totalMs || endsAt - Date.now(), 1);
+  const tick = () => {
+    const left = Math.max(endsAt - Date.now(), 0);
+    $("qTimer").textContent = Math.ceil(left / 1000);
+    $("qBar").style.width = (left / total) * 100 + "%";
+    if (left <= 0) clearInterval(timerHandle);
+  };
+  tick();
+  timerHandle = setInterval(tick, 250);
+}
+
+function answer(response) {
+  if (paused) { $("status").textContent = "The host paused the game"; return; }
+  socket.answer(response, (res) => {
+    if (res.ok) { $("answeredTitle").textContent = "Answer locked in"; show("answered"); }
+    else $("status").textContent = res.error;
+  });
+}
+
+socket.on("game:question", (q) => { lastQuestion = q; renderQuestion(q); });
+
+socket.on("game:paused", (p) => {
+  paused = p.paused;
+  renderPaused();
+  if (paused) clearInterval(timerHandle);
+  else startTimer(p.endsAt, lastQuestion ? lastQuestion.totalMs : null);
+});
+
+// the host's screen dropped off; the server is holding the game open for them
+socket.on("game:hostaway", ({ away }) => {
+  $("status").textContent = away ? "Waiting for the host to reconnect…" : "";
+});
+
+socket.on("game:results", (r) => {
+  clearInterval(timerHandle);
+  const box = $("resultBox");
+  const partial = r.ratio > 0 && r.correct !== true;
+
+  if (r.unscored) {
+    box.className = "fill result-neutral";
+    $("resultTitle").textContent = r.answered ? "Thanks!" : "No answer";
+    $("resultPts").textContent = r.answered ? "Your response is on the host screen" : "";
+  } else {
+    box.className = "fill " + (r.correct ? "result-ok" : partial ? "result-part" : "result-bad");
+    $("resultTitle").textContent = r.correct ? "Correct!" : partial ? "Close!" : !r.answered ? "Too slow!" : "Wrong";
+    const total = r.gained + (r.bonus || 0);
+    $("resultPts").textContent = total > 0
+      ? `+${total} points`
+      : r.answer ? `The answer was ${r.answer.label}` : "";
+  }
+
+  const streak = $("resultStreak");
+  streak.hidden = !(r.correct && r.streak >= 2);
+  if (!streak.hidden) streak.textContent = `🔥 ${r.streak} in a row` + (r.bonus ? ` · +${r.bonus} bonus` : "");
+
+  const moved = (r.prevRank ?? r.rank) - r.rank;
+  const movement = moved > 0 ? ` · up ${moved} place${moved > 1 ? "s" : ""}` : moved < 0 ? ` · down ${-moved}` : "";
+  $("resultRank").textContent = `Rank #${r.rank} · ${r.score} pts${movement}`;
+  const ex = $("resultExplain");
+  ex.hidden = !r.explanation;
+  ex.textContent = r.explanation || "";
+
+  $("resultGap").textContent = !r.ahead
+    ? (r.rank === 1 ? "You're in the lead!" : "")
+    : r.ahead.gap === 0
+      ? `Tied with ${r.ahead.name}`
+      : `${r.ahead.gap} points behind ${r.ahead.name}`;
+  show("result");
+});
+
+socket.on("game:end", (r) => {
+  $("endRank").textContent = `#${r.rank} of ${r.players}`;
+  $("endScore").textContent = `${r.score} points`;
+  show("end");
+});
+
+socket.on("game:restarted", () => {
+  clearInterval(timerHandle);
+  paused = false;
+  renderPaused();
+  $("status").textContent = "";
+  if (me) show("wait");
+});
+
+socket.on("game:closed", () => { socket.unsubscribe(); $("status").textContent = "Host ended the game"; show("join"); });
+socket.on("game:kicked", () => { socket.unsubscribe(); $("status").textContent = "You were removed by the host"; me = null; show("join"); });
+socket.on("disconnect", () => { $("status").textContent = "Reconnecting…"; });
+// the channel re-subscribes by itself after a drop, and the server replays the current question
+socket.on("connect", () => { $("status").textContent = ""; });
+socket.on("rejected", () => { $("status").textContent = "The game has closed"; me = null; show("join"); });
+</script>

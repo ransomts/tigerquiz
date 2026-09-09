@@ -236,7 +236,10 @@ application.
 - [x] Phase 4: editor and reports. The JSON API under `/api` keeps the Node paths, so the
       editor and reports pages moved into views with their scripts nearly untouched. `api.js`
       adds the CSRF token Rails expects. QR codes come from rqrcode; images from a directory.
-- [ ] Phase 5: game engine.
+- [x] Phase 5: game engine. `Games::Room` and `Games::Registry` under `app/services/games`,
+      `GameChannel`, the create/resume/join/lobby endpoints, and the host and player pages on a
+      small Action Cable shim (`game-socket.js`). `test/games/room_test.rb` plays whole games the
+      way `test/game.test.mjs` did; `tools/smoke.mjs` does it over real websockets.
 - [ ] Phase 6: deployment.
 
 ### Notes from phase 1
@@ -251,6 +254,10 @@ application.
 - Setting up without root: `bundle config set --local path vendor/bundle` before `bundle install`.
 - The json gem is pinned below 3.0: Active Support 8.1.3 passes parse options positionally,
   which json 3.0 rejects.
+- Players get a per-game token when they join and present it to subscribe, so nobody can
+  answer under someone else's name. The Node version trusted the socket alone.
+- A player who reconnects has the open question replayed by the server; the Node page re-joined
+  by hand. A host who reconnects mid-results gets the results screen back, as before.
 - Question images stay in a directory (`quizzes/images/`, or `TIGERQUIZ_IMAGES`) served by a
   route, rather than moving to Active Storage. The editor never uploaded images; instructors
   drop files in a folder, and a folder is easier to back up and to serve from Apache directly.

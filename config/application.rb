@@ -16,6 +16,10 @@ module Tigerquiz
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # The host screen is opened by network name or IP, never localhost, so the
+    # websocket must accept whatever origin the page itself was served from.
+    config.action_cable.allow_same_origin_as_host = true
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files

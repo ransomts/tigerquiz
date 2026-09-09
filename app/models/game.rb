@@ -26,6 +26,37 @@ class Game < ApplicationRecord
     }
   end
 
+  # ---------- written while a game runs ----------
+
+  def upsert_player(name, identifier)
+    game_players.find_or_initialize_by(name: name).update!(identifier: identifier)
+  end
+
+  def record_question(idx, q)
+    game_questions.find_or_initialize_by(idx: idx).update!(
+      question_type: q["type"], text: q["text"], answer: q["answerLabel"], choices: q["choices"],
+      explanation: q["explanation"], source_idx: q["sourceIndex"], correct_answer: q["correctAnswer"]
+    )
+  end
+
+  def record_answers(idx, rows)
+    return if rows.empty?
+
+    transaction do
+      rows.each do |r|
+        game_answers.find_or_initialize_by(idx: idx, player: r["player"])
+                    .update!(response: r["response"], ms: r["ms"], correct: r["correct"], points: r["points"] || 0)
+      end
+    end
+  end
+
+  def finish!(board, question_count)
+    transaction do
+      board.each { |p| game_players.where(name: p["name"]).update_all(score: p["score"], rank: p["rank"]) }
+      update!(ended_at: Time.current, question_count: question_count, player_count: board.length)
+    end
+  end
+
   # Abandon a game that never finished, so half-played rooms do not pile up.
   def discard_if_unfinished
     destroy unless finished?
