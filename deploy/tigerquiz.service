@@ -20,6 +20,10 @@ EnvironmentFile=/etc/tigerquiz.env
 ExecStart=/usr/bin/node server.js
 Restart=on-failure
 RestartSec=3
+# The app handles SIGTERM: it tells any game still running that the server is
+# going away, checkpoints the database, then exits. Give it room to do that.
+KillSignal=SIGTERM
+TimeoutStopSec=15
 
 # Never run a second copy. Every live game — its players, their answers and the
 # question timer — lives in the memory of one process, so a second instance
