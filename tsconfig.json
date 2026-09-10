@@ -27,5 +27,5 @@
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["server.js", "lib/**/*.js", "public/**/*.js", "test/**/*.mjs", "tools/**/*.mjs"]
+  "include": ["server.js", "lib/**/*.js", "public/**/*.js", "test/**/*.mjs", "tools/**/*.mjs", "types/**/*.d.ts"]
 }

@@ -3,6 +3,7 @@
 // This file is wiring only. The parts are:
 //
 //   lib/config.js    paths and tunables read from the environment
+//   lib/auth.js      who is asking, and what they may touch
 //   lib/content.js   reading and writing quizzes and class lists on disk
 //   lib/routes.js    the HTTP API the teacher's browser calls
 //   lib/room.js      one live game: players, clock, scoring, rewind
@@ -17,6 +18,7 @@ import { createServer } from "node:http";
 import { Server } from "socket.io";
 import * as store from "./lib/db.js";
 import * as nick from "./lib/nicknames.js";
+import { attachUser } from "./lib/auth.js";
 import { apiRouter } from "./lib/routes.js";
 import { attachSockets } from "./lib/sockets.js";
 import { PORT, HOST, PUBLIC_DIR, IMAGE_DIR, DATA_DIR, BLOCKED_WORDS } from "./lib/config.js";
@@ -32,6 +34,8 @@ const io = new Server(http);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(PUBLIC_DIR));
 app.use("/quiz-images", express.static(IMAGE_DIR));
+// Identity first: the API needs req.user, and /api/me answers for the pages.
+app.use(attachUser);
 app.use("/api", apiRouter());
 
 attachSockets(io);

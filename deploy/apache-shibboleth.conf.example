@@ -15,6 +15,9 @@
 #   2. Node listens on 127.0.0.1 only (HOST=127.0.0.1 in the environment
 #      file), so nothing can reach it around Apache and forge it directly.
 #
+# Set TIGERQUIZ_AUTH=required in the environment file alongside this, or the
+# app will accept the header but enforce nothing with it.
+#
 # Drop either one and the header means nothing. If other people have shell
 # accounts on this machine, bind Node to a Unix socket instead of loopback.
 
@@ -73,6 +76,14 @@
 
     # The dice button on the join screen suggests a nickname.
     <Location /api/nickname>
+        ShibRequestSetting requireSession false
+        Require all granted
+    </Location>
+
+    # Says whether anyone is signed in, and names them if so. Public so the
+    # teacher pages can render a "not signed in" state rather than failing
+    # silently; it carries no data when nobody has a session.
+    <Location /api/me>
         ShibRequestSetting requireSession false
         Require all granted
     </Location>

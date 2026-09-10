@@ -46,6 +46,7 @@ identity header, so nothing can reach the app around the proxy.
 ```sh
 npm run lint       # eslint
 npm test           # plays full games over websockets against a throwaway database
+npm run test:auth  # sign-in and per-instructor ownership
 npm run check      # validate every quiz and class list before a lesson
 npm run typecheck  # type-check the JavaScript in place; no build step
 ```
@@ -63,6 +64,7 @@ Dependabot upgrade PRs safe to merge on a glance.
 | File | What it holds |
 | --- | --- |
 | `lib/config.js` | Paths and tunables read from the environment |
+| `lib/auth.js` | Who is asking, and what they may touch |
 | `lib/content.js` | Reading and writing quizzes and class lists on disk |
 | `lib/routes.js` | The HTTP API the teacher's browser calls |
 | `lib/room.js` | One live game: players, clock, scoring, rewind |
@@ -180,28 +182,45 @@ endpoint answer to anyone, while
 [`reports.html`](https://brgr.cecas.clemson.edu/quiz/reports.html) and
 everything under `/api/` return 401 until you give it the password.
 
-## Campus SSO
+## Campus SSO and per-instructor ownership
 
 Basic auth is one shared password for everyone who teaches. Where the
-institution already runs Shibboleth, Apache can terminate SAML instead and hand
-the app a verified identity, which is also what per-instructor ownership of
-quizzes and reports would be built on.
+institution runs Shibboleth, Apache can terminate SAML instead and hand the app
+a verified identity — and then quizzes, class lists and reports belong to
+whoever made them.
 
-None of this reaches the application code: `mod_shib` does the SAML, and the
-app receives one request header. `deploy/apache-shibboleth.conf.example` is a
-working virtual host — TLS, the websocket proxy, which paths need a session, and
-the two `RequestHeader` lines that make the header trustworthy. Pair it with
-`HOST=127.0.0.1` so the app cannot be reached around Apache; the header is
-forgeable by anyone who can, and the config is worth nothing without that.
+**This is off by default.** Without it the app behaves exactly as it always
+has: one unnamed teacher who owns nothing and sees everything, which is what a
+laptop on a classroom projector wants. Turn it on with `TIGERQUIZ_AUTH=required`
+and put Apache in front.
 
-`deploy/tigerquiz.service` runs the app under systemd, and
+None of it reaches the application code: `mod_shib` does the SAML, and the app
+reads one request header. `deploy/apache-shibboleth.conf.example` is a working
+virtual host — TLS, the websocket proxy, which paths need a session, and the two
+`RequestHeader` lines that make the header trustworthy. Pair it with
+`HOST=127.0.0.1` so the app cannot be reached around Apache: the header is
+forgeable by anyone who can reach the port directly, and the config is worth
+nothing without that.
+
+Quizzes and class lists stay as files in `quizzes/`, so everything below about
+hand-editing still works. A table records who owns each one:
+
+| State | Who sees it | Who can change it |
+| --- | --- | --- |
+| Owned by you | you | you |
+| Owned by someone else | nobody else | nobody else |
+| Unowned | every instructor | nobody, until claimed |
+
+Saving something new makes it yours. The samples that ship with the app, files
+dropped into `quizzes/` by hand, and reports from before sign-in existed all
+start unowned: shared, read-only, and claimable with one click in the editor.
+
+Students never sign in. They join by PIN from any phone, which is the point.
+
+`deploy/tigerquiz.service` runs the app under systemd and
 `deploy/tigerquiz.env.example` is the environment file it reads.
-
-Sign-in itself is not implemented yet — the app currently has no login of its
-own and relies on the proxy.
-[docs/shibboleth-and-ownership.md](docs/shibboleth-and-ownership.md) carries the
-design: how to read the header, which paths stay public, and the schema
-per-instructor ownership needs.
+[docs/shibboleth-and-ownership.md](docs/shibboleth-and-ownership.md) has the
+details, including what is deliberately left to SQL.
 
 ## Writing quizzes
 

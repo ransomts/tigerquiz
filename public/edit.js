@@ -70,9 +70,18 @@ async function showList() {
     const actions = el("div", "row");
     const dup = el("button", null, "Duplicate");
     dup.onclick = () => duplicateQuiz(q.id);
-    const del = el("button", null, "Delete");
-    del.onclick = () => removeQuiz(q.id, q.title);
-    actions.append(dup, del);
+    actions.append(dup);
+    if (q.unowned) {
+      // Nobody has claimed this one, so it is read-only until somebody does.
+      main.append(el("div", "card-meta muted", "Shared · claim it to edit"));
+      const claim = el("button", null, "Claim");
+      claim.onclick = () => claimThing("quiz", q.id, q.title);
+      actions.append(claim);
+    } else {
+      const del = el("button", null, "Delete");
+      del.onclick = () => removeQuiz(q.id, q.title);
+      actions.append(del);
+    }
     card.append(main, actions);
     box.appendChild(card);
   }
@@ -85,13 +94,20 @@ async function showList() {
     const main = el("a", "cardmain");
     main.href = `#roster/${encodeURIComponent(r.id)}`;
     main.append(el("div", "card-title", r.title), el("div", "card-meta", `${r.count} students · ${r.id}.json`));
-    const del = el("button", null, "Delete");
-    del.onclick = async () => {
-      if (!confirm(`Delete the class list "${r.title}"?`)) return;
-      await fetch(`api/roster/${encodeURIComponent(r.id)}`, { method: "DELETE" });
-      showList();
-    };
-    card.append(main, del);
+    let action;
+    if (r.unowned) {
+      main.append(el("div", "card-meta muted", "Shared · claim it to edit"));
+      action = el("button", null, "Claim");
+      action.onclick = () => claimThing("roster", r.id, r.title);
+    } else {
+      action = el("button", null, "Delete");
+      action.onclick = async () => {
+        if (!confirm(`Delete the class list "${r.title}"?`)) return;
+        await fetch(`api/roster/${encodeURIComponent(r.id)}`, { method: "DELETE" });
+        showList();
+      };
+    }
+    card.append(main, action);
     rbox.appendChild(card);
   }
 }
@@ -603,3 +619,31 @@ function csvRows(text) {
 }
 
 route();
+
+/**
+ * Take over a quiz or class list nobody owns. Until then it is visible to every
+ * instructor and editable by none, which is what stops two people quietly
+ * overwriting the same file.
+ */
+async function claimThing(kind, id, title) {
+  if (!confirm(`Claim "${title}"? It becomes yours to edit, and other instructors stop seeing it.`)) return;
+  const res = await api(`api/${kind}/${encodeURIComponent(id)}/claim`, { method: "POST" });
+  if (res.error) return alert(res.error);
+  showList();
+}
+
+/** Name whoever is signed in, so it is obvious whose quizzes these are. */
+async function showWhoAmI() {
+  let me;
+  try {
+    me = await api("api/me");
+  } catch {
+    return; // an older server without /api/me; the page still works
+  }
+  if (!me.authRequired) return;
+  const bar = document.getElementById("whoami");
+  if (!bar) return;
+  bar.textContent = me.user ? `Signed in as ${me.user.name || me.user.eppn}` : "Not signed in";
+  bar.hidden = false;
+}
+showWhoAmI();

@@ -10,6 +10,8 @@
 <main class="doc-main">
   <header class="doc-head">
     <h1>Game reports</h1>
+    <!-- filled in by showWhoAmI(); stays hidden when sign-in is switched off -->
+    <p id="whoami" class="muted small" hidden></p>
     <div class="row">
       <a class="btnlink" href="edit.html">Edit quizzes</a>
       <a class="btnlink" href="host.html">Host a game</a>
@@ -322,6 +324,17 @@ function route() {
 $("backLink").onclick = (e) => { e.preventDefault(); location.hash = ""; };
 window.addEventListener("hashchange", route);
 route();
+
+// Name whoever is signed in, matching the editor.
+(async () => {
+  try {
+    const me = await fetch("api/me").then((r) => r.json());
+    if (!me.authRequired) return;
+    const bar = document.getElementById("whoami");
+    bar.textContent = me.user ? `Signed in as ${me.user.name || me.user.eppn}` : "Not signed in";
+    bar.hidden = false;
+  } catch { /* older server, or offline; the page still works */ }
+})();
 </script>
 </body>
 </html>

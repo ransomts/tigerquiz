@@ -1,6 +1,6 @@
-# Runs the linter, the test suite, the quiz validator and the type checker on
-# every push. All four also run locally: npm run lint, npm test,
-# npm run check, npm run typecheck.
+# Runs the linter, both test suites, the quiz validator and the type checker on
+# every push. All of them also run locally: npm run lint, npm test,
+# npm run test:auth, npm run check, npm run typecheck.
 name: CI
 
 on:
@@ -24,5 +24,6 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
+      - run: npm run test:auth
       - run: npm run check
       - run: npm run typecheck
