@@ -14,7 +14,7 @@ This was a deliberate choice over converting the tree to `.ts`:
   is the thing that config was written to avoid.
 - `public/edit.js` is 604 lines of browser code with no bundler. It cannot be
   `.ts` without introducing one, but `checkJs` covers it for free.
-- Node 24 does run `.ts` directly by stripping types, but stripping is not
+- Node 26 does run `.ts` directly by stripping types, but stripping is not
   checking — `tsc --noEmit` would still run in CI. Same checker, same config,
   plus a rename of every file and a restriction to erasable syntax.
 

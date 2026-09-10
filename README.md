@@ -26,6 +26,10 @@ npm install
 npm start          # http://localhost:3000
 ```
 
+Needs Node 26 or newer, which is what `.node-version` records and what CI and
+the Docker image use. `node:sqlite` is a built-in, so there is nothing to
+compile and no database to install.
+
 [docs/teaching-with-tigerquiz.md](docs/teaching-with-tigerquiz.md) walks through
 one lesson from start to finish, with screenshots.
 
