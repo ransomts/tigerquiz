@@ -49,10 +49,12 @@ identity header, so nothing can reach the app around the proxy.
 
 ```sh
 npm run lint       # eslint
+npm run test:unit  # scoring, validation and the join throttle, in process
 npm test           # plays full games over websockets against a throwaway database
 npm run test:auth  # sign-in and per-instructor ownership
 npm run check      # validate every quiz and class list before a lesson
 npm run typecheck  # type-check the JavaScript in place; no build step
+npm run coverage   # line coverage of the pure logic
 ```
 
 The code is plain JavaScript and stays that way — `npm run typecheck` runs
@@ -412,6 +414,39 @@ for grading or a spreadsheet.
 
 Games the host abandons before the final standings are discarded rather than saved.
 Set `TIGERQUIZ_DATA` to store the database somewhere else.
+
+## Guessing a PIN
+
+A game PIN is six digits, so there are 900,000 of them and a script can try a
+lot of them quickly. Unthrottled, one connection managed about 3,400 lookups a
+second here, which is the whole space in roughly four minutes — enough to list
+the title of every lesson running and walk into any game not gated by a class
+list.
+
+Wrong guesses are therefore rate-limited: twenty to start with, then one back
+every ten seconds. That leaves the same sweep taking about three months, while
+costing a real student nothing, because **only wrong guesses are charged**. That
+distinction matters more than it looks: a class usually shares one address, so
+charging every attempt would throttle the room rather than the intruder.
+
+Behind a proxy, set `TIGERQUIZ_TRUST_PROXY=true` so the throttle can tell
+clients apart — every socket arrives from `127.0.0.1` otherwise, and one
+attacker would spend everybody's budget. Only set it when a proxy really is in
+front: without one, a client can invent the header and hand itself a fresh
+budget. `TIGERQUIZ_JOIN_BURST` and `TIGERQUIZ_JOIN_REFILL_MS` tune it.
+
+A class list is still the stronger control, since it rejects anyone not on it
+by name or ID.
+
+## Restarts
+
+Live games are held in memory, so stopping the server ends every game running
+on it. That is unchanged, but it is no longer silent: on `SIGTERM` the server
+tells each open game it is going away, so phones and projectors show a message
+rather than hanging, then checkpoints the database and exits. A crash is
+handled the same way and logged, instead of vanishing with the games.
+
+`deploy/tigerquiz.service` allows fifteen seconds for that.
 
 ## Backups
 

@@ -7,11 +7,13 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "test:unit": "node --test test/questions.test.mjs test/ratelimit.test.mjs",
     "test": "node test/game.test.mjs",
     "test:auth": "node test/auth.test.mjs",
     "check": "node tools/check-quizzes.mjs",
     "lint": "eslint .",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-include=lib/questions.js --test-coverage-include=lib/ratelimit.js test/questions.test.mjs test/ratelimit.test.mjs"
   },
   "license": "GPL-3.0-or-later",
   "engines": {

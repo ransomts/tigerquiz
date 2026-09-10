@@ -1,6 +1,9 @@
-# Runs the linter, both test suites, the quiz validator and the type checker on
-# every push. All of them also run locally: npm run lint, npm test,
-# npm run test:auth, npm run check, npm run typecheck.
+# Runs the linter, the unit and end-to-end suites, the quiz validator and the
+# type checker on every push. All of them also run locally: npm run lint,
+# npm run test:unit, npm test, npm run test:auth, npm run check, npm run
+# typecheck. npm run coverage reports on the units.
+#
+# This workflow is a required check on main, so a red build cannot land.
 name: CI
 
 on:
@@ -23,6 +26,7 @@ jobs:
 
       - run: npm ci
       - run: npm run lint
+      - run: npm run test:unit
       - run: npm test
       - run: npm run test:auth
       - run: npm run check
