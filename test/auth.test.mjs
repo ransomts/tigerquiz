@@ -247,6 +247,10 @@ async function testGameAndReportOwnership() {
   const students = await json(await as(BOB, "/api/students"));
   check("nor see the students in it", students.body?.length === 0, String(students.body?.length));
 
+  // An unowned report is nobody's, not everybody's: unlike a quiz, it carries
+  // student names, identifiers and every answer they gave.
+  await testUnownedReportsArePrivate(id);
+
   // hosting over the websocket is gated the same way as the HTTP API
   const bobKey = (await json(await as(BOB, "/api/host-key"))).body.key;
   const bobSock = io(URL, { extraHeaders: { "X-Remote-User": BOB } });
@@ -254,4 +258,39 @@ async function testGameAndReportOwnership() {
   const refused = await new Promise((r) => bobSock.emit("host:create", { quizId: ALICES, key: bobKey }, r));
   check("another instructor cannot host it either", refused?.ok === false, refused?.error || "");
   bobSock.close();
+}
+
+/**
+ * Reports recorded before sign-in existed have no owner. They must not follow
+ * the quiz rule, where unowned means shared.
+ */
+async function testUnownedReportsArePrivate(ownedId) {
+  console.log("\n# an unowned report is nobody's, not everybody's");
+
+  // Put the report back the way a pre-sign-in one looks. There is no endpoint
+  // for this on purpose, so the test reaches for the database directly.
+  const db = await import("node:child_process");
+  db.execSync(`sqlite3 ${DATA}/tigerquiz.db "UPDATE games SET owner = NULL WHERE id = '${ownedId}'"`);
+
+  for (const [who, label] of [[ALICE, "the instructor who ran it"], [BOB, "another instructor"]]) {
+    const list = await json(await as(who, "/api/reports"));
+    check(`${label} no longer sees it once it is unowned`, list.body?.length === 0, String(list.body?.length));
+    check(`${label} cannot open it`, (await as(who, `/api/reports/${ownedId}`)).status === 404);
+    check(`${label} cannot take its CSV`, (await as(who, `/api/reports/${ownedId}/csv`)).status === 404);
+  }
+
+  const students = await json(await as(ALICE, "/api/students"));
+  check("the students in it are hidden too", students.body?.length === 0, String(students.body?.length));
+
+  // An admin can see it, which is what makes it recoverable at all.
+  db.execSync(`sqlite3 ${DATA}/tigerquiz.db "UPDATE users SET role = 'admin' WHERE eppn = '${BOB}'"`);
+  const adminList = await json(await as(BOB, "/api/reports"));
+  check("an admin can see unowned reports", adminList.body?.length === 1, String(adminList.body?.length));
+  check("and can open one", (await as(BOB, `/api/reports/${ownedId}`)).status === 200);
+
+  // ...and hand it to whoever should have it.
+  const claim = await as(BOB, `/api/reports/${ownedId}/claim`, { method: "POST" });
+  check("and can claim it", claim.status === 200, String(claim.status));
+
+  db.execSync(`sqlite3 ${DATA}/tigerquiz.db "UPDATE users SET role = 'instructor' WHERE eppn = '${BOB}'"`);
 }
