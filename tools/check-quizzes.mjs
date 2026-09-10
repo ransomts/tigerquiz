@@ -144,7 +144,7 @@ async function checkQuiz(file) {
 }
 
 async function checkRosters() {
-  let files = [];
+  let files;
   try {
     files = (await readdir(ROSTER_DIR)).filter((f) => f.endsWith(".json")).sort();
   } catch {

@@ -6,3 +6,11 @@ test
 README.md
 Dockerfile
 .dockerignore
+
+# tooling and docs; never COPYed into the image
+docs
+deploy
+.github
+eslint.config.js
+tsconfig.json
+vendor

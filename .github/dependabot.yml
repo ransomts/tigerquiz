@@ -1,0 +1,20 @@
+# Weekly dependency PRs. These are only safe to merge on a glance because CI
+# runs the linter, the full game suite, the quiz validator and the type checker
+# on every pull request — an upgrade that breaks a game says so before merge.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for the routine patch and minor bumps; majors stay separate so
+      # they get read properly.
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

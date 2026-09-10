@@ -44,6 +44,7 @@ defaults to `0.0.0.0`; set it to `127.0.0.1` when a proxy in front supplies the
 identity header, so nothing can reach the app around the proxy.
 
 ```sh
+npm run lint       # eslint
 npm test           # plays full games over websockets against a throwaway database
 npm run check      # validate every quiz and class list before a lesson
 npm run typecheck  # type-check the JavaScript in place; no build step
@@ -52,7 +53,26 @@ npm run typecheck  # type-check the JavaScript in place; no build step
 The code is plain JavaScript and stays that way — `npm run typecheck` runs
 TypeScript as a checker over the `.js` files without compiling anything. See
 [docs/typing.md](docs/typing.md) for how to annotate and what is still switched
-off. All three commands run in CI on every push.
+off. All four commands run in CI on every push, which is what makes the weekly
+Dependabot upgrade PRs safe to merge on a glance.
+
+### How the code is laid out
+
+`server.js` is wiring only. The pieces it assembles:
+
+| File | What it holds |
+| --- | --- |
+| `lib/config.js` | Paths and tunables read from the environment |
+| `lib/content.js` | Reading and writing quizzes and class lists on disk |
+| `lib/routes.js` | The HTTP API the teacher's browser calls |
+| `lib/room.js` | One live game: players, clock, scoring, rewind |
+| `lib/registry.js` | Every open game, and the host keys that create them |
+| `lib/sockets.js` | The websocket messages, for hosts and players |
+| `lib/questions.js` | Question types: validation, presentation, grading |
+| `lib/db.js` | The SQLite report store |
+
+`Room` takes socket.io as a constructor argument rather than importing it, so a
+game can be driven without a server attached.
 
 ## Docker
 
@@ -369,6 +389,30 @@ for grading or a spreadsheet.
 
 Games the host abandons before the final standings are discarded rather than saved.
 Set `TIGERQUIZ_DATA` to store the database somewhere else.
+
+## Backups
+
+`data/tigerquiz.db` holds every report — student names, identifiers, and each
+player's answer to each question. Nothing else in the checkout is irreplaceable,
+and nothing backs it up on its own.
+
+```sh
+deploy/backup.sh /srv/tigerquiz/data /srv/backups
+```
+
+Do not simply copy the file. The database runs in WAL mode, so at any moment
+some committed reports live in `tigerquiz.db-wal` and not yet in
+`tigerquiz.db`: copying the `.db` alone can lose the most recent games, and
+copying the three files separately can catch them mid-checkpoint and produce a
+backup that will not open. The script uses SQLite's `VACUUM INTO`, which takes a
+consistent snapshot of a live database without blocking the running server, then
+verifies it opens and prunes anything older than 30 days.
+
+Cron it daily:
+
+```
+17 3 * * *  /srv/tigerquiz/deploy/backup.sh /srv/tigerquiz/data /srv/backups
+```
 
 ## Host screen
 

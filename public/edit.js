@@ -434,9 +434,7 @@ function checkbox(label, checked, onChange) {
 }
 
 // ---------- class lists ----------
-let rosterId = null;
 function newRoster() {
-  rosterId = null;
   $("rosterView").hidden = false;
   $("rTitle").value = "";
   $("rId").value = "";
@@ -446,7 +444,6 @@ function newRoster() {
 async function openRoster(id) {
   const data = await api(`api/roster/${encodeURIComponent(id)}`);
   if (data.error) { alert(data.error); location.hash = ""; return; }
-  rosterId = id;
   $("rosterView").hidden = false;
   $("rTitle").value = data.title || id;
   $("rId").value = id;
@@ -468,7 +465,7 @@ $("rosterSaveBtn").onclick = async () => {
     body: JSON.stringify({ title: $("rTitle").value.trim() || id, students }),
   });
   $("rosterState").textContent = res.error || `Saved ${res.count} students`;
-  if (!res.error) { rosterId = id; $("rId").value = id; }
+  if (!res.error) $("rId").value = id;
 };
 
 // ---------- import ----------

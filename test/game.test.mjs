@@ -417,7 +417,6 @@ async function testPhoneText() {
   nextHostQ = once(host, "game:question");
   host.emit("host:next");
   await nextPlayerQ;
-  nextPlayerQ = once(s, "game:question");
   const hq = await nextHostQ;
   await wait(50);
 

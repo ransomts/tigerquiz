@@ -1,5 +1,6 @@
 // Tiny synthesized sound effects (no audio files needed). Host screen only.
 // Call Sound.init() from a user gesture (click) before anything will play.
+/* exported Sound */
 const Sound = (() => {
   let ctx = null;
   let muted = false;
