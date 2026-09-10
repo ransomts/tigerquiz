@@ -217,9 +217,20 @@ hand-editing still works. A table records who owns each one:
 | Owned by someone else | nobody else | nobody else |
 | Unowned | every instructor | nobody, until claimed |
 
-Saving something new makes it yours. The samples that ship with the app, files
-dropped into `quizzes/` by hand, and reports from before sign-in existed all
-start unowned: shared, read-only, and claimable with one click in the editor.
+Saving something new makes it yours. The samples that ship with the app and
+files dropped into `quizzes/` by hand start unowned: shared, read-only, and
+claimable with one click in the editor.
+
+**Reports are the exception, deliberately.** A quiz nobody owns is worth
+sharing; a report nobody owns holds a class's names, student IDs and every
+answer they gave, so it is shared with nobody but an admin. That means reports
+recorded before sign-in was switched on go invisible until they are handed to
+someone — do that first:
+
+```sh
+node tools/assign-owner.mjs --user you@example.edu --reports --dry-run
+node tools/assign-owner.mjs --user you@example.edu --reports
+```
 
 Students never sign in. They join by PIN from any phone, which is the point.
 

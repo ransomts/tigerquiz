@@ -56,7 +56,25 @@ Three states, and the rules follow from them:
 | --- | --- | --- |
 | Owned by you | you | you |
 | Owned by someone else | nobody else | nobody else |
-| Unowned | every instructor | nobody, until claimed |
+| Unowned **quiz or class list** | every instructor | nobody, until claimed |
+| Unowned **report** | admins only | admins only |
+
+**Reports do not follow the same rule as quizzes, deliberately.** A quiz nobody
+owns is worth sharing — that is what the shipped samples are for. A report
+nobody owns holds a class's names, student IDs and every answer they gave, so it
+is shared with nobody. Otherwise switching sign-in on would have handed every
+instructor the full history of every class taught on the box.
+
+That makes historical reports invisible until somebody is given them:
+
+```sh
+node tools/assign-owner.mjs --user you@example.edu --reports --dry-run
+node tools/assign-owner.mjs --user you@example.edu --reports
+```
+
+Run that **before** turning sign-in on, or the reports vanish from the page
+until you do. `--admin` promotes a user, `--quizzes` and `--rosters` do the same
+for files, and `--dry-run` shows the damage first.
 
 - **Saving something new makes it yours.** There is no separate create step.
 - **Unowned means shared and read-only.** The quizzes shipped with the app,
@@ -75,8 +93,8 @@ sets it yet — promote by hand with SQL when you need one.
 
 ## What is not done
 
-- No admin page. Listing every user, promoting one, or reassigning an owner is
-  a SQL statement today.
+- No admin page. `tools/assign-owner.mjs` covers assigning content and
+  promoting an admin; anything else is a SQL statement.
 - Ownership cannot be transferred, only claimed when unowned. Releasing
   something back to unowned means `DELETE FROM owners WHERE ...`.
 - `tools/check-quizzes.mjs` validates every file on disk regardless of owner,
