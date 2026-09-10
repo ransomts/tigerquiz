@@ -1,0 +1,37 @@
+# systemd unit for tigerquiz behind Apache or nginx.
+#
+#   sudo cp deploy/tigerquiz.service /etc/systemd/system/
+#   sudo cp deploy/tigerquiz.env.example /etc/tigerquiz.env   # then edit it
+#   sudo chmod 600 /etc/tigerquiz.env
+#   sudo systemctl daemon-reload && sudo systemctl enable --now tigerquiz
+#
+# Assumes a checkout at /srv/tigerquiz owned by a "tigerquiz" user.
+[Unit]
+Description=tigerquiz live quiz game
+After=network.target
+
+[Service]
+Type=simple
+User=tigerquiz
+Group=tigerquiz
+WorkingDirectory=/srv/tigerquiz
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/tigerquiz.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=3
+
+# Never run a second copy. Every live game — its players, their answers and the
+# question timer — lives in the memory of one process, so a second instance
+# would serve games the first one has never heard of.
+
+# The report database, quiz files and images live under the checkout; nothing
+# outside it is written.
+ProtectSystem=full
+ReadWritePaths=/srv/tigerquiz/data /srv/tigerquiz/quizzes
+ProtectHome=true
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

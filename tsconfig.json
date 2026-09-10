@@ -1,0 +1,31 @@
+{
+  // TypeScript is used here as a checker, not as a language. Every file stays
+  // .js and runs unmodified under node; there is no build step and nothing in
+  // the deploy path changes. `npm run typecheck` is the whole integration.
+  //
+  // Note: TypeScript 7 turns "strict" on by default, so it is switched off
+  // explicitly and the parts that already pass are turned back on one at a
+  // time. That keeps CI green today and makes tightening a deliberate act.
+  // See docs/typing.md for what is still off and the order to enable it in.
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023", "dom", "dom.iterable"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+
+    // Check the .js files in place, emit nothing.
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+
+    "strict": false,
+    // These already pass with no annotations, so they are on permanently.
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["server.js", "lib/**/*.js", "public/**/*.js", "test/**/*.mjs", "tools/**/*.mjs"]
+}

@@ -19,7 +19,7 @@ function freePort() {
     const probe = createServer();
     probe.on("error", reject);
     probe.listen(0, () => {
-      const { port } = probe.address();
+      const { port } = /** @type {import("node:net").AddressInfo} */ (probe.address());
       probe.close(() => resolve(port));
     });
   });
@@ -56,13 +56,13 @@ const server = spawn(process.execPath, ["--disable-warning=ExperimentalWarning",
   stdio: ["ignore", "pipe", "pipe"],
 });
 server.stderr.on("data", (d) => process.stderr.write(`[server] ${d}`));
-await new Promise((resolve, reject) => {
+await /** @type {Promise<void>} */ (new Promise((resolve, reject) => {
   const timer = setTimeout(() => reject(new Error("server did not start within 15s")), 15000);
   server.stdout.on("data", (d) => {
     if (String(d).includes("listening")) { clearTimeout(timer); resolve(); }
   });
   server.on("exit", (code) => { clearTimeout(timer); reject(new Error(`server exited with code ${code} before starting`)); });
-});
+}));
 console.log(`server on port ${PORT}`);
 
 try {

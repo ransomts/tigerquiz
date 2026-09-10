@@ -1,0 +1,95 @@
+# Apache in front of tigerquiz: TLS, Shibboleth SSO, and a proxy to Node.
+#
+# Needs: mod_ssl, mod_proxy, mod_proxy_http, mod_proxy_wstunnel, mod_headers,
+# and mod_shib (the shibboleth2 service provider). Enable them with a2enmod,
+# drop this into sites-available, fix the host name and paths, and a2ensite it.
+#
+# Shibboleth never reaches the application. Apache terminates SAML and hands
+# the app an identity as one request header, so there is no SAML library in
+# Node and nothing language-specific about any of this.
+#
+# Two things carry the whole trust model:
+#
+#   1. Apache unsets any X-Remote-User a client sent, then sets it from the
+#      Shibboleth session. A client cannot forge it through Apache.
+#   2. Node listens on 127.0.0.1 only (HOST=127.0.0.1 in the environment
+#      file), so nothing can reach it around Apache and forge it directly.
+#
+# Drop either one and the header means nothing. If other people have shell
+# accounts on this machine, bind Node to a Unix socket instead of loopback.
+
+<VirtualHost *:443>
+    ServerName quiz.example.edu
+
+    SSLEngine on
+    SSLCertificateFile    /etc/ssl/certs/quiz.example.edu.pem
+    SSLCertificateKeyFile /etc/ssl/private/quiz.example.edu.key
+
+    # ---- proxy ----------------------------------------------------------
+    # First match wins, so the websocket rule has to come before the catch-all.
+    # A game holds one websocket open for a whole lesson; the timeout has to
+    # outlast the lesson or players drop mid-game.
+    ProxyPreserveHost On
+    ProxyTimeout 3600
+
+    ProxyPass        /socket.io/ ws://127.0.0.1:3000/socket.io/
+    ProxyPassReverse /socket.io/ ws://127.0.0.1:3000/socket.io/
+    ProxyPass        /           http://127.0.0.1:3000/
+    ProxyPassReverse /           http://127.0.0.1:3000/
+
+    RequestHeader set X-Forwarded-Proto "https"
+
+    # ---- identity -------------------------------------------------------
+    # Never trust the client's copy; always set from the Shibboleth session.
+    # ShibUseHeaders stays Off: mod_shib exports attributes as environment
+    # variables, and these two lines are the only place they become headers.
+    RequestHeader unset X-Remote-User
+    RequestHeader unset X-Remote-Name
+    RequestHeader set X-Remote-User "%{REMOTE_USER}s" env=REMOTE_USER
+    RequestHeader set X-Remote-Name "%{displayName}e" env=displayName
+
+    # ---- who needs a session --------------------------------------------
+    # Students never sign in: they join by PIN, so the join page, the
+    # websocket and the images stay open. <Location> blocks merge shortest
+    # path first, which is what lets the one public API endpoint sit inside
+    # the protected tree.
+    <Location />
+        AuthType shibboleth
+        ShibRequestSetting requireSession false
+        ShibUseHeaders Off
+        Require shibboleth
+    </Location>
+
+    # Protect all of /api/ rather than listing endpoints, so an endpoint added
+    # later is covered by default instead of exposed until somebody notices.
+    <Location /api/>
+        AuthType shibboleth
+        ShibRequestSetting requireSession true
+        ShibUseHeaders Off
+        Require shib-session
+        # Optionally restrict further, e.g. to faculty and staff:
+        # Require shib-attr affiliation ~ ^(faculty|staff)@example\.edu$
+    </Location>
+
+    # The dice button on the join screen suggests a nickname.
+    <Location /api/nickname>
+        ShibRequestSetting requireSession false
+        Require all granted
+    </Location>
+
+    <LocationMatch "^/(host|edit|reports)\.html$">
+        AuthType shibboleth
+        ShibRequestSetting requireSession true
+        ShibUseHeaders Off
+        Require shib-session
+    </LocationMatch>
+
+    <Location /Shibboleth.sso>
+        SetHandler shib
+    </Location>
+</VirtualHost>
+
+<VirtualHost *:80>
+    ServerName quiz.example.edu
+    Redirect permanent / https://quiz.example.edu/
+</VirtualHost>

@@ -11,7 +11,11 @@ import * as store from "./lib/db.js";
 import * as nick from "./lib/nicknames.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
+// Bind everywhere by default: players reach the host by network address, and a
+// container needs 0.0.0.0. Set HOST=127.0.0.1 when a proxy in front supplies
+// the identity header, so nothing can reach the app around it (see deploy/).
+const HOST = process.env.HOST || "0.0.0.0";
 const QUIZ_DIR = path.join(__dirname, "quizzes");
 const IMAGE_DIR = path.join(QUIZ_DIR, "images");
 const ROSTER_DIR = path.join(QUIZ_DIR, "rosters");
@@ -1081,8 +1085,8 @@ function hostRoomFor(socket) {
   return rooms.get(socket.data.pin) || null;
 }
 
-http.listen(PORT, () => {
-  console.log(`tigerquiz listening on http://localhost:${PORT}`);
+http.listen(PORT, HOST, () => {
+  console.log(`tigerquiz listening on http://localhost:${PORT} (bound to ${HOST})`);
   console.log(`  host:    http://localhost:${PORT}/host.html`);
   console.log(`  play:    http://localhost:${PORT}/`);
   console.log(`  reports: http://localhost:${PORT}/reports.html`);

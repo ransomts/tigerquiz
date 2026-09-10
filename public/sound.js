@@ -7,7 +7,7 @@ const Sound = (() => {
 
   function init() {
     if (ctx) return;
-    try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { ctx = null; }
+    try { ctx = new (window.AudioContext || /** @type {any} */ (window).webkitAudioContext)(); } catch { ctx = null; }
   }
 
   // play one tone: frequency, duration (s), optional start offset (s), waveform, volume

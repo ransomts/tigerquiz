@@ -1,5 +1,9 @@
 // Quiz and class list editor. Everything is edited in the browser and written
 // back to the quizzes folder through the API, so no JSON has to be typed by hand.
+// Returns any because nearly every caller immediately reaches for .value or
+// .checked on an input. Narrowing this means a cast at each of ~26 call sites;
+// see docs/typing.md before tightening it.
+/** @param {string} id @returns {any} */
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const api = (url, opts) => fetch(url, opts).then((r) => r.json());

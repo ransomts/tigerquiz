@@ -39,12 +39,20 @@ that students see are built from the address in your browser bar, so a localhost
 address gives them a link they cannot reach. The lobby warns you when it spots this.
 
 Set `PORT` to change the port. Everyone must be able to reach the host machine on that
-port (same Wi-Fi, or put it behind a reverse proxy).
+port (same Wi-Fi, or put it behind a reverse proxy). `HOST` sets the bind address and
+defaults to `0.0.0.0`; set it to `127.0.0.1` when a proxy in front supplies the
+identity header, so nothing can reach the app around the proxy.
 
 ```sh
 npm test           # plays full games over websockets against a throwaway database
 npm run check      # validate every quiz and class list before a lesson
+npm run typecheck  # type-check the JavaScript in place; no build step
 ```
+
+The code is plain JavaScript and stays that way — `npm run typecheck` runs
+TypeScript as a checker over the `.js` files without compiling anything. See
+[docs/typing.md](docs/typing.md) for how to annotate and what is still switched
+off. All three commands run in CI on every push.
 
 ## Docker
 
@@ -151,6 +159,29 @@ endpoint answer to anyone, while
 [`edit.html`](https://brgr.cecas.clemson.edu/quiz/edit.html),
 [`reports.html`](https://brgr.cecas.clemson.edu/quiz/reports.html) and
 everything under `/api/` return 401 until you give it the password.
+
+## Campus SSO
+
+Basic auth is one shared password for everyone who teaches. Where the
+institution already runs Shibboleth, Apache can terminate SAML instead and hand
+the app a verified identity, which is also what per-instructor ownership of
+quizzes and reports would be built on.
+
+None of this reaches the application code: `mod_shib` does the SAML, and the
+app receives one request header. `deploy/apache-shibboleth.conf.example` is a
+working virtual host — TLS, the websocket proxy, which paths need a session, and
+the two `RequestHeader` lines that make the header trustworthy. Pair it with
+`HOST=127.0.0.1` so the app cannot be reached around Apache; the header is
+forgeable by anyone who can, and the config is worth nothing without that.
+
+`deploy/tigerquiz.service` runs the app under systemd, and
+`deploy/tigerquiz.env.example` is the environment file it reads.
+
+Sign-in itself is not implemented yet — the app currently has no login of its
+own and relies on the proxy.
+[docs/shibboleth-and-ownership.md](docs/shibboleth-and-ownership.md) carries the
+design: how to read the header, which paths stay public, and the schema
+per-instructor ownership needs.
 
 ## Writing quizzes
 

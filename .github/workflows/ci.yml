@@ -1,0 +1,26 @@
+# Runs the test suite, the quiz validator and the type checker on every push.
+# All three also run locally: npm test, npm run check, npm run typecheck.
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # node:sqlite is a built-in, so this needs Node 22+. The Dockerfile pins
+      # node:24-alpine; keep this on the same major.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run check
+      - run: npm run typecheck
