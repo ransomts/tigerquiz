@@ -53,10 +53,13 @@ measured at the commit that added this file:
 
 | Flag | Errors today | Notes |
 | --- | --- | --- |
-| `noImplicitReturns` | 12 | Smallest next step |
 | `useUnknownInCatchVariables` | 26 | Mostly `catch (e)` reaching for `e.message` |
 | `strictNullChecks` | 87 | The one that finds real bugs; do it before `noImplicitAny` |
 | `noImplicitAny` | 436 | The bulk of the annotation work, and the least urgent |
+
+`noImplicitReturns` was turned on once the game screens moved out of inline
+HTML scripts and into checked files; the fixes were mechanical (`return
+res.json(...)` on the fallthrough paths of the API handlers).
 
 Enable one, drive it to zero, commit. Do not add `// @ts-ignore` to make a flag
 pass — that trades a checked error for an unchecked one.

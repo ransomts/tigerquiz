@@ -25,7 +25,8 @@
     "alwaysStrict": true,
     "strictFunctionTypes": true,
     "strictBindCallApply": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true
   },
   "include": ["server.js", "lib/**/*.js", "public/**/*.js", "test/**/*.mjs", "tools/**/*.mjs", "types/**/*.d.ts"]
 }
