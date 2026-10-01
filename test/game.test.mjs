@@ -77,6 +77,7 @@ try {
   await testEditorApi();
   await testTiedScores();
   await testNicknamesAndRehearsal();
+  await testKickedPlayer();
 } catch (e) {
   console.error("\nthrew:", e.message);
   fail.push(e.message);
@@ -783,4 +784,41 @@ async function testNicknamesAndRehearsal() {
   const anyone = students[0];
   check("each student carries their game history", Array.isArray(anyone.games) && anyone.games.length > 0);
   check("each student has a correct rate", anyone.correctRate === null || (anyone.correctRate >= 0 && anyone.correctRate <= 1));
+}
+
+async function testKickedPlayer() {
+  console.log("\n# kicking a player mid-question");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quizId: "sample" });
+
+  const keep = io(URL);
+  await once(keep, "connect");
+  check("the kept player joins", (await emit(keep, "player:join", { pin: game.pin, name: "keeper" })).ok === true);
+  const gone = io(URL);
+  await once(gone, "connect");
+  check("the kicked player joins", (await emit(gone, "player:join", { pin: game.pin, name: "goner" })).ok === true);
+
+  let nextQ = once(host, "game:question");
+  host.emit("host:start", {});
+  await nextQ;
+
+  // kick mid-question, then have the kicked client answer anyway: the room's
+  // player map is not enough, the socket's routing state must go too
+  const kickedNote = once(gone, "game:kicked");
+  host.emit("host:kick", "goner");
+  await kickedNote;
+  const late = await emit(gone, "player:answer", 0);
+  check("a kicked player cannot answer", late.ok === false && /not in a game/i.test(late.error), late.error);
+
+  // the kept player's answer is the only one the host sees
+  const answeredNote = once(host, "game:answered");
+  await emit(keep, "player:answer", 0);
+  const note = await answeredNote;
+  check("the kicked player is not counted", note.answered === 1 && note.players === 1, JSON.stringify(note));
+
+  keep.close();
+  gone.close();
+  host.close();
+  await wait(100);
 }
