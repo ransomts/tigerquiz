@@ -12,6 +12,13 @@ let quiz = null;      // the quiz being edited
 let quizId = null;    // its file name, null until first save
 let dirty = false;
 let checkTimer = null;
+let saveTimer = null;
+let saving = false;
+// One snapshot per destructive action, so "Undo delete" can always go back.
+let undoSnapshot = null;
+// Which questions are expanded, held by object reference so moving or deleting
+// one does not shuffle the open state onto a different question.
+let openQuestions = new Set();
 
 // ---------- question type definitions, mirroring the server ----------
 const TYPE_LABEL = {
@@ -19,6 +26,23 @@ const TYPE_LABEL = {
   slider: "Number guess", text: "Typed answer", order: "Put in order",
   poll: "Poll", wordcloud: "Word cloud", slide: "Content slide",
 };
+
+/**
+ * What each type is, in words rather than jargon, for the picker. Nine names in
+ * a dropdown asked people to know all nine before seeing any of them; this says
+ * what each one does and what it looks like.
+ */
+const TYPES_HELP = [
+  { type: "choice", icon: "\u25b2", blurb: "Players pick one answer from up to four.", eg: "Which planet is red?" },
+  { type: "truefalse", icon: "\u2713", blurb: "Just two options: true or false.", eg: "The Pacific is the largest ocean." },
+  { type: "multi", icon: "\u25c6", blurb: "More than one answer is right. Partial credit for getting some.", eg: "Which of these are mammals?" },
+  { type: "text", icon: "\u270e", blurb: "Players type an answer. Spelling slips are forgiven.", eg: "What is the capital of France?" },
+  { type: "slider", icon: "\u2194", blurb: "Players guess a number on a slider. Close counts.", eg: "How tall is Everest, in metres?" },
+  { type: "order", icon: "\u2263", blurb: "Players drag items into the right order.", eg: "Put these events in order." },
+  { type: "poll", icon: "\u25cf", blurb: "No right answer \u2014 just see what the room thinks.", eg: "Which topic should we cover next?" },
+  { type: "wordcloud", icon: "\u2601", blurb: "Everyone types a word, and the common ones grow larger.", eg: "One word for how today felt." },
+  { type: "slide", icon: "\u25a0", blurb: "Not a question. A slide to talk over, with no timer.", eg: "Recap: three things to remember" },
+];
 const HAS_CHOICES = new Set(["choice", "multi", "poll"]);
 const SCORED = new Set(["choice", "truefalse", "multi", "slider", "text", "order"]);
 
@@ -139,7 +163,20 @@ async function removeQuiz(id, title) {
 
 $("newQuizBtn").onclick = () => { location.hash = "new"; };
 $("newRosterBtn").onclick = () => { location.hash = "new-roster"; };
-$("backLink").onclick = (e) => { e.preventDefault(); if (leaveOk()) location.hash = ""; };
+/**
+ * Leaving the quiz editor saves rather than asking. The only time it asks is
+ * when the quiz cannot be saved because something in it is unfinished, which is
+ * a real choice rather than a nag.
+ */
+async function leaveEditor() {
+  if (!dirty) return true;
+  clearTimeout(saveTimer);
+  await save();
+  if (!dirty) return true;
+  return confirm("This quiz cannot be saved yet because something still needs fixing.\n\nLeave anyway and lose the last changes?");
+}
+$("backLink").onclick = async (e) => { e.preventDefault(); if (await leaveEditor()) location.hash = ""; };
+// The class list still has an explicit Save button, so it still asks.
 $("rosterBack").onclick = (e) => { e.preventDefault(); if (leaveOk()) location.hash = ""; };
 const leaveOk = () => !dirty || confirm("You have unsaved changes. Leave anyway?");
 
@@ -150,6 +187,10 @@ function newQuiz() {
   dirty = false;
   $("editView").hidden = false;
   $("editHeading").textContent = "New quiz";
+  undoSnapshot = null;
+  $("undoBtn").hidden = true;
+  setSaveState("unsaved", "Give the quiz a title and it will save itself");
+  resetOpenQuestions();
   fillQuizFields();
   renderQuestions();
 }
@@ -163,6 +204,10 @@ async function openQuiz(id) {
   dirty = false;
   $("editView").hidden = false;
   $("editHeading").textContent = "Edit quiz";
+  undoSnapshot = null;
+  $("undoBtn").hidden = true;
+  setSaveState("saved", "All changes saved");
+  resetOpenQuestions();
   fillQuizFields();
   renderQuestions();
 }
@@ -184,12 +229,28 @@ for (const [id, key] of [["fShuffleQ", "shuffleQuestions"], ["fShuffleA", "shuff
 }
 $("fId").oninput = () => touch();
 
+/**
+ * Something changed. Saving happens on its own a moment later, so the only job
+ * here is to say so and start the clock. Nothing asks the user to remember to
+ * save, and nothing is lost by walking away from the page.
+ */
 function touch() {
   dirty = true;
-  $("saveState").textContent = "Unsaved changes";
+  setSaveState("unsaved", "Not saved yet");
   clearTimeout(checkTimer);
   checkTimer = setTimeout(validate, 600);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 1200);
 }
+
+/** The one line that says whether the work is safe. */
+function setSaveState(kind, text) {
+  const bar = $("saveBar");
+  if (bar) bar.className = `savebar ${kind}`;
+  $("saveState").textContent = text;
+}
+
+const justNow = () => new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 async function validate() {
   const res = await api("api/quiz-check", {
@@ -207,76 +268,228 @@ async function validate() {
   return res.ok;
 }
 
-$("saveBtn").onclick = async () => {
+/**
+ * Save, quietly, on a timer. A half-finished quiz will not pass validation, and
+ * that is fine: it is reported as something to fix rather than as an error, and
+ * the next keystroke tries again.
+ */
+async function save() {
+  if (saving || !dirty) return;
   const id = $("fId").value.trim() || slug(quiz.title);
-  if (!id) return alert("Give the quiz a title or a file name");
-  $("fId").value = id;
-  const res = await api(`api/quiz/${encodeURIComponent(id)}`, {
-    method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(quiz),
-  });
-  if (res.error) {
-    await validate();
-    $("saveState").textContent = res.error;
+  if (!id) {
+    setSaveState("unsaved", "Give the quiz a title and it will save itself");
     return;
   }
-  dirty = false;
-  quizId = id;
-  $("saveState").textContent = `Saved ${res.count} question${res.count === 1 ? "" : "s"}`;
-  $("problems").hidden = true;
-  if (location.hash !== `#quiz/${encodeURIComponent(id)}`) history.replaceState(null, "", `#quiz/${encodeURIComponent(id)}`);
-};
+  saving = true;
+  setSaveState("saving", "Saving\u2026");
+  try {
+    const res = await api(`api/quiz/${encodeURIComponent(id)}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(quiz),
+    });
+    if (res.error) {
+      await validate();
+      // A quiz that is not finished yet is not a failure worth alarming anyone
+      // about; anything else is.
+      setSaveState("unsaved", res.problems?.length ? "Not saved \u2014 see what needs fixing below" : res.error);
+      return;
+    }
+    dirty = false;
+    quizId = id;
+    $("fId").value = id;
+    setSaveState("saved", `All changes saved \u00b7 ${justNow()}`);
+    $("problems").hidden = true;
+    if (location.hash !== `#quiz/${encodeURIComponent(id)}`) history.replaceState(null, "", `#quiz/${encodeURIComponent(id)}`);
+  } catch {
+    setSaveState("unsaved", "Could not reach the server. Your work is still on screen.");
+  } finally {
+    saving = false;
+  }
+}
+
+// Leaving the page saves rather than nagging. The beforeunload warning stays as
+// a last resort for the case where this does not get the chance to finish.
+window.addEventListener("pagehide", () => { if (dirty) save(); });
 
 const slug = (s) => String(s).toLowerCase().trim().replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
 
 $("addBtn").onclick = () => {
-  quiz.questions.push(blankQuestion($("addType").value));
-  touch();
-  renderQuestions();
-  const cards = document.querySelectorAll(".qcard-edit");
-  cards[cards.length - 1]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  pickType("What kind of question?", (type) => {
+    const q = blankQuestion(type);
+    quiz.questions.push(q);
+    openQuestions.add(q); // you just made it, so you want to fill it in
+    touch();
+    renderQuestions();
+    const cards = document.querySelectorAll(".qcard-edit");
+    cards[cards.length - 1]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
 };
+
+/**
+ * Show the nine kinds of question as cards with an example, and call back with
+ * whichever one is chosen.
+ */
+function pickType(title, onPick) {
+  $("typeModalTitle").textContent = title;
+  const grid = $("typeGrid");
+  grid.innerHTML = "";
+  for (const t of TYPES_HELP) {
+    const card = el("button", "typecard");
+    card.append(
+      el("span", "typeicon", t.icon),
+      el("span", "typename", TYPE_LABEL[t.type]),
+      el("span", "typeblurb", t.blurb),
+      el("span", "typeeg", `e.g. \u201c${t.eg}\u201d`),
+    );
+    card.onclick = () => { closeType(); onPick(t.type); };
+    grid.appendChild(card);
+  }
+  $("typeModal").hidden = false;
+}
+
+const closeType = () => { $("typeModal").hidden = true; };
+$("cancelType").onclick = closeType;
+
+/**
+ * Change an existing question's type without losing the wording. Anything the
+ * new type cannot use is dropped, which is why it asks first.
+ */
+function changeType(q, i) {
+  pickType("Change this question to\u2026", (type) => {
+    if (type === q.type) return;
+    const text = q.text;
+    const time = q.time;
+    const explanation = q.explanation;
+    const fresh = blankQuestion(type);
+    // Keep what carries over; a new type gets fresh answers.
+    if (HAS_CHOICES.has(type) && HAS_CHOICES.has(q.type) && Array.isArray(q.choices) && q.choices.length >= 2) {
+      fresh.choices = [...q.choices];
+      if (type === "choice") fresh.answer = 0;
+      if (type === "multi") fresh.answers = [0];
+    }
+    Object.assign(fresh, { text, time, explanation });
+    snapshot();
+    openQuestions.delete(quiz.questions[i]);
+    openQuestions.add(fresh);
+    quiz.questions[i] = fresh;
+    touch();
+    renderQuestions();
+  });
+}
 
 // ---------- one card per question ----------
 function renderQuestions() {
   const box = $("questions");
   box.innerHTML = "";
+
+  if (quiz.questions.length > 1) {
+    const bar = el("div", "qlist-tools");
+    const allOpen = quiz.questions.every((q) => openQuestions.has(q));
+    const toggle = el("button", "small", allOpen ? "Collapse all" : "Expand all");
+    toggle.onclick = () => {
+      if (allOpen) openQuestions.clear();
+      else for (const q of quiz.questions) openQuestions.add(q);
+      renderQuestions();
+    };
+    bar.append(el("span", "muted small", `${quiz.questions.length} questions`), toggle);
+    box.appendChild(bar);
+  }
+
   quiz.questions.forEach((q, i) => box.appendChild(questionCard(q, i)));
 }
 
-function questionCard(q, i) {
-  const card = el("div", "qcard-edit");
-  const head = el("div", "qcard-edit-head");
-  head.append(el("span", "qnum", String(i + 1)), el("span", "qtype", TYPE_LABEL[q.type] || q.type));
+/**
+ * A short quiz opens with everything visible; a long one would be a wall of
+ * boxes, so it opens collapsed with the wording of each question showing.
+ */
+function resetOpenQuestions() {
+  openQuestions = new Set(quiz.questions.length <= 5 ? quiz.questions : []);
+}
 
-  const tools = el("div", "row");
-  const up = el("button", "icon", "↑"); up.title = "Move up"; up.disabled = i === 0;
-  up.onclick = () => moveQuestion(i, -1);
-  const down = el("button", "icon", "↓"); down.title = "Move down"; down.disabled = i === quiz.questions.length - 1;
-  down.onclick = () => moveQuestion(i, 1);
-  const copy = el("button", "icon", "⧉"); copy.title = "Duplicate";
-  copy.onclick = () => { quiz.questions.splice(i + 1, 0, JSON.parse(JSON.stringify(q))); touch(); renderQuestions(); };
-  const del = el("button", "icon", "✕"); del.title = "Delete";
-  del.onclick = () => {
-    if (quiz.questions.length === 1) return alert("A quiz needs at least one question");
-    quiz.questions.splice(i, 1); touch(); renderQuestions();
-  };
-  tools.append(up, down, copy, del);
-  head.appendChild(tools);
+/** Remember the whole quiz before something destructive, so Undo can restore it. */
+function snapshot() {
+  undoSnapshot = JSON.parse(JSON.stringify(quiz));
+  const btn = $("undoBtn");
+  if (btn) btn.hidden = false;
+}
+
+function undo() {
+  if (!undoSnapshot) return;
+  quiz = undoSnapshot;
+  undoSnapshot = null;
+  $("undoBtn").hidden = true;
+  resetOpenQuestions();
+  fillQuizFields();
+  touch();
+  renderQuestions();
+}
+
+function questionCard(q, i) {
+  // A real <details>, so collapsing works from the keyboard and the browser
+  // handles the open state rather than a class of our own.
+  const card = el("details", "qcard-edit");
+  card.open = openQuestions.has(q);
+  card.addEventListener("toggle", () => {
+    if (card.open) openQuestions.add(q);
+    else openQuestions.delete(q);
+  });
+
+  const head = document.createElement("summary");
+  head.className = "qcard-edit-head";
+  head.append(el("span", "qnum", String(i + 1)), el("span", "qtype", TYPE_LABEL[q.type] || q.type));
+  // Enough of the wording to find the right question while it is shut.
+  const peek = (q.text || "").trim();
+  head.append(el("span", "qpeek", peek || "(no question yet)"));
   card.appendChild(head);
 
-  card.appendChild(field("Question", textInput(q.text, (v) => { q.text = v; })));
-  buildTypeFields(card, q);
+  const body = el("div", "qcard-body");
+  card.appendChild(body);
 
-  card.appendChild(field("Image file (optional)", textInput(q.image || "", (v) => { q.image = v; }), "A file in quizzes/images/, or a full http address"));
+  body.appendChild(field("Question", textInput(q.text, (v) => { q.text = v; })));
+  buildTypeFields(body, q);
+
+  body.appendChild(field("Image file (optional)", textInput(q.image || "", (v) => { q.image = v; }), "A file in quizzes/images/, or a full http address"));
   if (q.type !== "slide") {
-    card.appendChild(field("Seconds to answer", numInput(q.time ?? 20, 1, 600, (v) => { q.time = v; })));
+    body.appendChild(field("Seconds to answer", numInput(q.time ?? 20, 1, 600, (v) => { q.time = v; })));
   }
   if (SCORED.has(q.type)) {
-    card.appendChild(field("Explanation", textInput(q.explanation || "", (v) => { q.explanation = v; }), "Shown to everyone when the answer is revealed"));
+    body.appendChild(field("Explanation", textInput(q.explanation || "", (v) => { q.explanation = v; }), "Shown to everyone when the answer is revealed"));
   }
   if (["choice", "truefalse", "multi"].includes(q.type)) {
-    card.appendChild(checkbox("Worth discussing, then voting again", !!q.discuss, (v) => { q.discuss = v; }));
+    body.appendChild(checkbox("Worth discussing, then voting again", !!q.discuss, (v) => { q.discuss = v; }));
   }
+
+  const tools = el("div", "qcard-actions");
+  const changeBtn = el("button", null, "Change type");
+  changeBtn.onclick = () => changeType(q, i);
+  const previewBtn = el("button", null, "Preview");
+  previewBtn.onclick = () => showPreview(q, i);
+  const up = el("button", null, "↑ Move up");
+  up.disabled = i === 0;
+  up.onclick = () => moveQuestion(i, -1);
+  const down = el("button", null, "↓ Move down");
+  down.disabled = i === quiz.questions.length - 1;
+  down.onclick = () => moveQuestion(i, 1);
+  const copy = el("button", null, "Duplicate");
+  copy.onclick = () => {
+    snapshot();
+    const dupe = JSON.parse(JSON.stringify(q));
+    quiz.questions.splice(i + 1, 0, dupe);
+    openQuestions.add(dupe);
+    touch();
+    renderQuestions();
+  };
+  const del = el("button", "danger", "Delete");
+  del.onclick = () => {
+    if (quiz.questions.length === 1) return alert("A quiz needs at least one question, so this one cannot be deleted. Change it to something else instead.");
+    const what = q.text && q.text.trim() ? `“${q.text.trim().slice(0, 60)}”` : `question ${i + 1}`;
+    if (!confirm(`Delete ${what}?\n\nYou can undo this straight afterwards.`)) return;
+    snapshot();
+    quiz.questions.splice(i, 1);
+    touch();
+    renderQuestions();
+  };
+  tools.append(changeBtn, previewBtn, up, down, copy, el("span", "spacer"), del);
+  body.appendChild(tools);
   return card;
 }
 
@@ -320,7 +533,7 @@ function buildTypeFields(card, q) {
         input.placeholder = `Choice ${ci + 1}`;
         row.appendChild(input);
         if (q.choices.length > 2) {
-          const rm = el("button", "icon", "✕");
+          const rm = el("button", "small", "Remove");
           rm.title = "Remove this choice";
           rm.onclick = () => {
             q.choices.splice(ci, 1);
@@ -334,11 +547,14 @@ function buildTypeFields(card, q) {
         wrap.appendChild(row);
       });
       if (q.choices.length < 4) {
-        const add = el("button", "small", "Add choice");
+        const add = el("button", "small", "+ Add another answer");
         add.onclick = () => { q.choices.push(""); touch(); renderQuestions(); };
         wrap.appendChild(add);
+      } else {
+        // The button vanishing with no explanation reads as a bug.
+        wrap.appendChild(el("p", "hint-inline", "Four answers is the most a question can have."));
       }
-      card.appendChild(field(hasAnswer ? "Choices, with the correct one marked" : "Choices", wrap));
+      card.appendChild(field(hasAnswer ? "Answers — tick the correct one" : "Options for the poll", wrap));
       break;
     }
     case "truefalse": {
@@ -372,7 +588,7 @@ function buildTypeFields(card, q) {
         input.placeholder = ai === 0 ? "Accepted answer" : "Also accept";
         row.appendChild(input);
         if (q.accept.length > 1) {
-          const rm = el("button", "icon", "✕");
+          const rm = el("button", "small", "Remove");
           rm.onclick = () => { q.accept.splice(ai, 1); touch(); renderQuestions(); };
           row.appendChild(rm);
         }
@@ -394,16 +610,18 @@ function buildTypeFields(card, q) {
         input.placeholder = `Item ${ii + 1}`;
         row.appendChild(input);
         if (q.items.length > 2) {
-          const rm = el("button", "icon", "✕");
+          const rm = el("button", "small", "Remove");
           rm.onclick = () => { q.items.splice(ii, 1); touch(); renderQuestions(); };
           row.appendChild(rm);
         }
         wrap.appendChild(row);
       });
       if (q.items.length < 6) {
-        const add = el("button", "small", "Add item");
+        const add = el("button", "small", "+ Add another item");
         add.onclick = () => { q.items.push(""); touch(); renderQuestions(); };
         wrap.appendChild(add);
+      } else {
+        wrap.appendChild(el("p", "hint-inline", "Six items is the most a question can have."));
       }
       card.appendChild(field("Items in the correct order", wrap, "Players see them shuffled"));
       break;
@@ -455,7 +673,7 @@ function newRoster() {
   $("rTitle").value = "";
   $("rId").value = "";
   $("rStudents").value = "";
-  $("rosterState").textContent = "";
+  setRosterState("unsaved", "Not saved yet");
 }
 async function openRoster(id) {
   const data = await api(`api/roster/${encodeURIComponent(id)}`);
@@ -467,7 +685,13 @@ async function openRoster(id) {
   $("rStudents").value = list
     .map((s) => (typeof s === "string" ? s : s.id ? `${s.name}, ${s.id}` : s.name))
     .join("\n");
-  $("rosterState").textContent = "";
+  setRosterState("saved", "Saved");
+}
+
+function setRosterState(kind, text) {
+  const bar = $("rosterBar");
+  if (bar) bar.className = `savebar ${kind}`;
+  $("rosterState").textContent = text;
 }
 $("rosterSaveBtn").onclick = async () => {
   const id = $("rId").value.trim() || slug($("rTitle").value);
@@ -480,7 +704,8 @@ $("rosterSaveBtn").onclick = async () => {
     method: "PUT", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title: $("rTitle").value.trim() || id, students }),
   });
-  $("rosterState").textContent = res.error || `Saved ${res.count} students`;
+  setRosterState(res.error ? "unsaved" : "saved",
+    res.error || `Saved. ${res.count} student${res.count === 1 ? "" : "s"} in this class.`);
   if (!res.error) $("rId").value = id;
 };
 
@@ -647,3 +872,76 @@ async function showWhoAmI() {
   bar.hidden = false;
 }
 showWhoAmI();
+
+
+// ---------- what players will see ----------
+const PREVIEW_SYMS = ["▲", "◆", "●", "■"];
+
+/**
+ * Show one question the way a player's phone shows it. Not pixel-perfect with
+ * the real game, but honest about the shape of it: this is the only way to
+ * check a question reads well without starting a game and joining from a phone.
+ */
+function showPreview(q, i) {
+  const body = $("previewBody");
+  body.innerHTML = "";
+
+  body.appendChild(el("div", "preview-meta", `Question ${i + 1} of ${quiz.questions.length}${q.type === "slide" ? "" : ` · ${q.time ?? 20} seconds`}`));
+
+  const text = (q.text || "").trim();
+  body.appendChild(el("div", "preview-q", text || "(no question text yet)"));
+  if (!text) body.querySelector(".preview-q").classList.add("muted");
+
+  if (q.image) body.appendChild(el("div", "preview-img", `[image: ${q.image}]`));
+
+  const answers = el("div", "preview-answers");
+  const labelled = (list) => list.forEach((c, ci) => {
+    const b = el("div", `preview-choice c${ci % 4}`);
+    b.append(el("span", "sym", PREVIEW_SYMS[ci] ?? String(ci + 1)), el("span", null, c || `(answer ${ci + 1} is empty)`));
+    answers.appendChild(b);
+  });
+
+  switch (q.type) {
+    case "choice":
+    case "multi":
+    case "poll":
+      labelled(q.choices || []);
+      break;
+    case "truefalse":
+      labelled(["True", "False"]);
+      break;
+    case "order":
+      (q.items || []).forEach((it, ii) => answers.appendChild(el("div", "preview-item", `${ii + 1}. ${it || "(empty)"}`)));
+      answers.appendChild(el("p", "hint-inline", "Players see these shuffled and drag them into order."));
+      break;
+    case "text":
+      answers.appendChild(el("div", "preview-input", "Players type their answer here"));
+      break;
+    case "slider":
+      answers.appendChild(el("div", "preview-input", `A slider from ${q.min ?? 0} to ${q.max ?? 100}${q.unit ? ` ${q.unit}` : ""}`));
+      break;
+    case "wordcloud":
+      answers.appendChild(el("div", "preview-input", `Players type ${q.maxWords ?? 1} word${(q.maxWords ?? 1) === 1 ? "" : "s"}`));
+      break;
+    case "slide":
+      answers.appendChild(el("p", "hint-inline", "Nothing to answer. The host talks over this, then moves on."));
+      break;
+  }
+  body.appendChild(answers);
+
+  if (quiz.phoneText === false && q.type !== "slide") {
+    body.appendChild(el("p", "hint-inline", "\u2139 \u201cShow the question on players\u2019 phones\u201d is off, so players see only the answer buttons and read the question from the projector."));
+  }
+  $("previewModal").hidden = false;
+}
+
+$("closePreview").onclick = () => { $("previewModal").hidden = true; };
+$("undoBtn").onclick = undo;
+
+// Escape closes whichever dialog is open, which is what people expect.
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  for (const id of ["previewModal", "typeModal"]) {
+    if (!$(id).hidden) { $(id).hidden = true; return; }
+  }
+});

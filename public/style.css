@@ -369,7 +369,7 @@ body.is-paused .choice, body.is-paused .orderitem { opacity: 0.5; }
 .check input { width: auto; }
 .checkrow { justify-content: flex-start; gap: 1.25rem; flex-wrap: wrap; }
 
-.qlist { display: flex; flex-direction: column; gap: 0.75rem; }
+.qlist { display: flex; flex-direction: column; gap: 1.25rem; }
 .qcard-edit { background: var(--panel); border-radius: 0.75rem; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
 .qcard-edit-head { display: flex; align-items: center; gap: 0.6rem; }
 .qnum {
@@ -390,7 +390,12 @@ button.toggle.on { background: var(--ok); color: #fff; }
 
 .choices { display: flex; flex-direction: column; gap: 0.4rem; }
 .choicerow { display: flex; align-items: center; gap: 0.5rem; }
+/* A flex item will not shrink past its own width, so an input at width:100%
+   overflows the row once a radio and a Remove button sit beside it. These two
+   lines are what keep every text box inside its container. */
+.choicerow input[type="text"], .choicerow input[type="number"] { flex: 1 1 auto; width: auto; min-width: 0; }
 .choicerow input[type="radio"], .choicerow input[type="checkbox"] { width: 1.15rem; height: 1.15rem; flex: none; }
+.choicerow button { flex: none; }
 .addrow { justify-content: flex-start; margin: 1rem 0 3rem; }
 .addrow select { width: auto; }
 
@@ -424,3 +429,135 @@ tbody tr.clickable:hover td { background: #ffffff14; }
 .namerow { display: flex; gap: 0.5rem; align-items: center; width: 100%; max-width: 20rem; }
 .namerow input { flex: 1; }
 button.dice { flex: none; padding: 0.75rem 0.9rem; font-size: 1.1rem; }
+
+/* ---------- quiz editor: built for readability over density ----------
+   Faculty use this page rarely and under time pressure, so the controls are
+   larger than the rest of the app, every button says what it does in words,
+   and the destructive one is set apart and coloured. */
+
+/* A comfortable target is about 44px; the editor's old icon buttons were ~26. */
+#editView button,
+#rosterView button,
+#listView button {
+  min-height: 2.75rem;
+  font-size: 1rem;
+}
+button.big { min-height: 3.25rem; font-size: 1.1rem; padding: 0.75rem 1.5rem; }
+
+/* Saving happens on its own, so this line is what tells you the work is safe.
+   It is the loudest thing on the page on purpose. */
+.savebar {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  padding: 0.75rem 1rem; border-radius: 0.75rem; font-weight: 600;
+  font-size: 1.05rem; border: 2px solid transparent;
+}
+.savebar.saved { background: #1d3b2a; border-color: #2e7d52; color: #b7f0cf; }
+.savebar.saving { background: #33321d; border-color: #7d762e; color: #f0ecb7; }
+.savebar.unsaved { background: #3b291d; border-color: #7d502e; color: #f0d2b7; }
+.savebar button { min-height: 2.25rem; margin-left: auto; }
+
+.bigfield { display: flex; flex-direction: column; gap: 0.4rem; font-size: 1.1rem; font-weight: 600; }
+.bigfield input { font-size: 1.15rem; padding: 0.9rem 1rem; }
+
+/* Things a quiz works fine without start folded away. */
+.advanced { background: var(--panel); border-radius: 0.75rem; padding: 0.5rem 1rem; }
+.advanced summary { cursor: pointer; padding: 0.5rem 0; font-weight: 600; min-height: 2.25rem; }
+.advanced[open] summary { margin-bottom: 0.5rem; }
+.hint-inline { font-size: 0.9rem; opacity: 0.75; font-weight: 400; margin: 0.2rem 0 0; }
+
+/* Question actions: delete pushed to the far end and coloured, so a near-miss
+   lands on Duplicate rather than on Delete. */
+.qcard-actions {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #ffffff1f;
+}
+.qcard-actions .spacer { flex: 1; min-width: 1rem; }
+button.danger { background: #5b2020; color: #ffd7d7; border-color: #8c3535; }
+button.danger:hover { background: #7a2a2a; }
+
+.addrow { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+
+/* Choosing a question type: nine cards with an example, rather than nine names
+   in a dropdown that had to be understood before any of them could be seen. */
+.modal-box.wide { max-width: 56rem; width: 100%; }
+.typegrid {
+  display: grid; gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  margin: 1rem 0;
+}
+button.typecard {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem;
+  text-align: left; padding: 1rem; min-height: 8rem; height: 100%;
+  background: #ffffff14; border: 2px solid #ffffff2b;
+}
+button.typecard:hover { background: #ffffff26; border-color: var(--accent, #f56600); }
+.typeicon { font-size: 1.6rem; line-height: 1; }
+.typename { font-size: 1.05rem; font-weight: 700; }
+.typeblurb { font-weight: 400; font-size: 0.92rem; opacity: 0.85; }
+.typeeg { font-weight: 400; font-size: 0.85rem; opacity: 0.6; font-style: italic; margin-top: auto; }
+
+/* The preview stands in for a phone, so it is narrow and dark like one. */
+.preview-phone {
+  max-width: 24rem; margin: 1rem auto; padding: 1rem;
+  background: #0d0d10; border: 2px solid #ffffff2b; border-radius: 1.25rem;
+}
+.preview-meta { font-size: 0.85rem; opacity: 0.7; margin-bottom: 0.5rem; }
+.preview-q { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.75rem; }
+.preview-img { font-size: 0.85rem; opacity: 0.6; margin-bottom: 0.5rem; }
+.preview-answers { display: flex; flex-direction: column; gap: 0.5rem; }
+.preview-choice {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.8rem; border-radius: 0.6rem; color: #fff; font-weight: 600;
+}
+.preview-choice .sym { font-size: 1.2em; }
+.preview-item { padding: 0.6rem 0.8rem; background: #ffffff1f; border-radius: 0.5rem; }
+.preview-input {
+  padding: 0.9rem; border: 2px dashed #ffffff3d; border-radius: 0.5rem;
+  text-align: center; opacity: 0.75;
+}
+
+.backlink { display: inline-block; padding: 0.5rem 0; font-size: 1.05rem; }
+
+@media (max-width: 40rem) {
+  .qcard-actions .spacer { display: none; }
+  .qcard-actions button { flex: 1 1 8rem; }
+}
+
+/* ---------- collapsible questions ----------
+   A twenty-question quiz was a wall of open boxes. Each question is a real
+   <details>, so the keyboard and the browser handle it; the summary keeps
+   enough of the wording to find the right one while it is shut. */
+.qlist-tools { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.qlist-tools .muted { margin-right: auto; }
+
+details.qcard-edit { display: block; padding: 0; }
+.qcard-edit > summary {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.9rem 1rem; cursor: pointer; list-style: none; min-height: 3rem;
+  border-radius: 0.75rem;
+}
+.qcard-edit > summary::-webkit-details-marker { display: none; }
+.qcard-edit > summary::after {
+  content: "▸"; margin-left: auto; flex: none; opacity: 0.7; font-size: 1.1rem;
+  transition: transform 0.15s;
+}
+.qcard-edit[open] > summary::after { transform: rotate(90deg); }
+.qcard-edit > summary:hover { background: #ffffff14; }
+
+/* The wording, clipped to one line, so a shut question is still identifiable. */
+.qpeek {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--muted); font-weight: 400;
+}
+.qcard-edit[open] .qpeek { display: none; }
+.qcard-edit .qtype { flex: none; }
+
+.qcard-body {
+  display: flex; flex-direction: column; gap: 0.75rem;
+  padding: 0 1rem 1rem; border-top: 1px solid #ffffff1f; padding-top: 0.9rem;
+}
+
+/* Belt and braces for every text box in the editor: none of them may push past
+   the card they sit in, whatever is beside them. */
+#editView input, #editView textarea, #editView select { max-width: 100%; }
+.field, .doc label { min-width: 0; }
