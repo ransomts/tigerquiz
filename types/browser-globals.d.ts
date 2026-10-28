@@ -27,3 +27,5 @@ declare const Sound: {
   /** podium fanfare */
   fanfare(): void;
 };
+// public/import.js, loaded by edit.html before edit.js
+declare const TQImport: any;

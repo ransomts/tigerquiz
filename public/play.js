@@ -38,7 +38,12 @@ function lookup() {
   if (pin.length < 4) { $("gameTitle").textContent = ""; $("ident").hidden = true; return; }
   socket.emit("player:lobby", { pin }, (res) => {
     if (!res.ok) { $("gameTitle").textContent = ""; $("ident").hidden = true; return; }
-    $("gameTitle").textContent = res.title;
+    // say what kind of thing this code opens, so nobody is surprised after joining
+    let title = res.title;
+    if (res.closed) title += " · closed";
+    else if (res.selfPaced) title += " · homework, at your own pace";
+    else if (res.started) title += " · already started, you can still join";
+    $("gameTitle").textContent = title;
     $("ident").hidden = !res.identifier;
     if (res.identifier) $("ident").placeholder = res.identifier;
   });
@@ -53,15 +58,18 @@ function join() {
   $("joinErr").textContent = "";
   socket.emit("player:join", { pin, name, identifier }, (res) => {
     if (!res.ok) { $("joinErr").textContent = res.error; return; }
-    me = { pin, name: res.name, identifier };
-    try { sessionStorage.setItem("tigerquiz", JSON.stringify(me)); } catch {}
+    me = { pin, name: res.name, identifier, selfPaced: !!res.selfPaced, uploadToken: res.uploadToken || null, team: res.team || null };
+    try { sessionStorage.setItem("tigerquiz", JSON.stringify({ pin, name: res.name, identifier })); } catch {}
     $("me").textContent = `${res.name} · ${pin}`;
     $("waitName").textContent = res.name;
+    const wt = $("waitTeam");
+    wt.hidden = !res.team;
+    if (res.team) { wt.textContent = `You're on ${res.team.name}`; wt.className = `teamline t${res.team.index}`; }
     if (res.state === "question" && res.question) {
       if (res.answered) show("answered");
       else renderQuestion(res.question);
     } else if (res.state === "end") {
-      show("end");
+      if (res.end) renderEnd(res.end); else show("end");
     } else {
       show("wait");
     }
@@ -84,9 +92,12 @@ $("againBtn").onclick = () => { me = null; show("join"); };
 // ---------- answer inputs, one builder per question type ----------
 const PROMPTS = {
   choice: "", truefalse: "", multi: "Pick every correct answer", poll: "Your opinion, no wrong answer",
-  slider: "Drag to your best guess", text: "Type your answer", wordcloud: "Type a word",
-  order: "Tap the items in the right order", slide: "",
+  slider: "Drag to your best guess", numeric: "Type a number", text: "Type your answer", wordcloud: "Type a word",
+  blank: "Fill in the blanks", order: "Tap the items in the right order", match: "Tap an item, then its match",
+  hotspot: "Tap the right spot on the picture", longtext: "Write your answer", file: "Hand in a photo or a PDF", slide: "",
 };
+/** What a question's point multiplier is called on the phone. */
+const WEIGHT_NOTE = { 0: "No points for this one", 0.5: "Half points", 2: "Double points!" };
 
 function renderQuestion(q) {
   const area = $("answerArea");
@@ -101,10 +112,16 @@ function renderQuestion(q) {
   t.hidden = !q.text;
   t.textContent = q.text || "";
   const img = $("qImage");
-  img.hidden = !q.image;
+  img.hidden = !q.image || q.type === "hotspot";
   img.src = q.image || "";
   // a second vote on the same question, after the class has discussed it
-  $("prompt").textContent = q.revote ? "Discuss, then answer again" : PROMPTS[q.type] || "";
+  const notes = [];
+  if (q.revote) notes.push("Discuss, then answer again");
+  else if (PROMPTS[q.type]) notes.push(PROMPTS[q.type]);
+  if (q.media) notes.push(q.media.kind === "audio" ? "Listen on the host screen" : "Watch the host screen");
+  if (q.weight != null && q.weight !== 1 && WEIGHT_NOTE[q.weight]) notes.push(WEIGHT_NOTE[q.weight]);
+  if (q.anonymous) notes.push("Anonymous: your name is not recorded");
+  $("prompt").textContent = notes.join(" · ");
   $("submitRow").hidden = true;
   $("submitBtn").disabled = true;
   $("submitBtn").textContent = "Submit";
@@ -113,7 +130,8 @@ function renderQuestion(q) {
   builder(q, area);
 
   if (q.index != null) $("qCount").textContent = `Q${q.index + 1} / ${q.total}`;
-  startTimer(q.endsAt, q.totalMs);
+  // homework has no clock to race; the bar just sits full
+  startTimer(q.selfPaced ? null : q.endsAt, q.totalMs);
   show("question");
 }
 
@@ -172,6 +190,231 @@ const BUILDERS = {
     area.appendChild(input);
     $("submitRow").hidden = false;
     setTimeout(() => input.focus(), 50);
+  },
+
+  numeric: (q, area) => {
+    area.className = "pad";
+    const wrap = document.createElement("div");
+    wrap.className = "numericbox";
+    const input = document.createElement("input");
+    input.className = "answerinput";
+    input.type = "text";
+    input.inputMode = "decimal";
+    input.placeholder = q.unit ? `Number in ${q.unit}` : "Your number";
+    input.autocomplete = "off";
+    const valid = () => input.value.trim() !== "" && Number.isFinite(Number(input.value.trim().replace(/,/g, "")));
+    input.oninput = () => { pending = valid() ? input.value.trim() : null; $("submitBtn").disabled = !valid(); };
+    input.onkeydown = (e) => { if (e.key === "Enter" && valid()) submit(); };
+    wrap.appendChild(input);
+    if (q.unit) {
+      const u = document.createElement("span");
+      u.className = "unit muted";
+      u.textContent = q.unit;
+      wrap.appendChild(u);
+    }
+    area.appendChild(wrap);
+    $("submitRow").hidden = false;
+    setTimeout(() => input.focus(), 50);
+  },
+
+  blank: (q, area) => {
+    area.className = "pad";
+    const inputs = [];
+    const update = () => {
+      const vals = inputs.map((x) => x.value.trim());
+      pending = vals.some(Boolean) ? vals : null;
+      $("submitBtn").disabled = !pending;
+    };
+    const makeInput = (i) => {
+      const input = document.createElement("input");
+      input.className = "blankinput";
+      input.placeholder = q.blanks > 1 ? `Blank ${i + 1}` : "Your answer";
+      input.maxLength = 60;
+      input.autocomplete = "off";
+      input.oninput = update;
+      input.onkeydown = (e) => {
+        if (e.key !== "Enter") return;
+        // Enter moves to the next gap, and submits from the last one
+        if (i + 1 < inputs.length) inputs[i + 1].focus();
+        else if (pending) submit();
+      };
+      inputs.push(input);
+      return input;
+    };
+    if (q.parts) {
+      // the sentence itself, with an input sitting in each gap
+      const p = document.createElement("p");
+      p.className = "blanktext";
+      q.parts.forEach((part, i) => {
+        p.appendChild(document.createTextNode(part));
+        if (i < q.parts.length - 1) p.appendChild(makeInput(i));
+      });
+      $("qText").hidden = true; // the sentence is rendered here instead
+      area.appendChild(p);
+    } else {
+      for (let i = 0; i < q.blanks; i++) {
+        const input = makeInput(i);
+        input.className = "answerinput";
+        area.appendChild(input);
+      }
+    }
+    $("submitRow").hidden = false;
+    setTimeout(() => inputs[0].focus(), 50);
+  },
+
+  longtext: (q, area) => {
+    area.className = "pad";
+    const ta = document.createElement("textarea");
+    ta.className = "longinput";
+    ta.placeholder = "Write your answer";
+    ta.maxLength = q.maxLength || 500;
+    ta.rows = 6;
+    const count = document.createElement("div");
+    count.className = "muted small charcount";
+    const sync = () => {
+      pending = ta.value.trim() ? ta.value : null;
+      $("submitBtn").disabled = !pending;
+      count.textContent = `${ta.value.length} / ${ta.maxLength}`;
+    };
+    ta.oninput = sync;
+    sync();
+    area.append(ta, count);
+    $("submitRow").hidden = false;
+    setTimeout(() => ta.focus(), 50);
+  },
+
+  match: (q, area) => {
+    area.className = "matchbox";
+    const n = q.lefts.length;
+    const pairs = new Array(n).fill(null); // left index -> right index
+    let activeLeft = null;
+    const leftCol = document.createElement("div");
+    leftCol.className = "matchcol";
+    const rightCol = document.createElement("div");
+    rightCol.className = "matchcol";
+    const mk = (label, cls) => {
+      const b = document.createElement("button");
+      b.className = `matchitem ${cls}`;
+      b.innerHTML = `<span class="pos"></span><span class="label"></span>`;
+      b.querySelector(".label").textContent = label;
+      return b;
+    };
+    const lefts = q.lefts.map((label) => mk(label, "left"));
+    const rights = q.rights.map((label) => mk(label, "right"));
+    const redraw = () => {
+      lefts.forEach((b, i) => {
+        b.classList.toggle("active", activeLeft === i);
+        b.classList.toggle("paired", pairs[i] != null);
+        b.querySelector(".pos").textContent = pairs[i] != null ? String(i + 1) : "";
+      });
+      rights.forEach((b, j) => {
+        const i = pairs.indexOf(j);
+        b.classList.toggle("paired", i >= 0);
+        b.querySelector(".pos").textContent = i >= 0 ? String(i + 1) : "";
+      });
+      const done = pairs.every((p) => p != null);
+      pending = done ? [...pairs] : null;
+      $("submitBtn").disabled = !done;
+      $("submitBtn").textContent = done ? "Submit" : `${pairs.filter((p) => p == null).length} left to match`;
+    };
+    lefts.forEach((b, i) => {
+      b.onclick = () => {
+        if (pairs[i] != null) { pairs[i] = null; activeLeft = i; }
+        else activeLeft = activeLeft === i ? null : i;
+        redraw();
+      };
+      leftCol.appendChild(b);
+    });
+    rights.forEach((b, j) => {
+      b.onclick = () => {
+        const had = pairs.indexOf(j);
+        if (had >= 0) { pairs[had] = null; activeLeft = had; redraw(); return; }
+        if (activeLeft == null) {
+          // no left item chosen yet: pick the first unmatched one for them
+          activeLeft = pairs.indexOf(null);
+          if (activeLeft < 0) return;
+        }
+        pairs[activeLeft] = j;
+        activeLeft = pairs.indexOf(null) >= 0 ? pairs.indexOf(null) : null;
+        redraw();
+      };
+      rightCol.appendChild(b);
+    });
+    activeLeft = 0;
+    redraw();
+    area.append(leftCol, rightCol);
+    $("submitRow").hidden = false;
+  },
+
+  file: (q, area) => {
+    area.className = "pad center";
+    const wrap = document.createElement("div");
+    wrap.className = "filebox";
+    const input = document.createElement("input");
+    input.type = "file";
+    input.id = "fileInput";
+    input.hidden = true;
+    input.accept = q.accept === "image" ? "image/*" : "image/*,application/pdf";
+    const pick = document.createElement("button");
+    pick.className = "primary big";
+    pick.textContent = q.accept === "image" ? "Take or choose a photo" : "Choose a photo or PDF";
+    pick.onclick = () => input.click();
+    const status = document.createElement("div");
+    status.className = "muted filestatus";
+    status.textContent = "Nothing chosen yet";
+    const thumb = document.createElement("img");
+    thumb.className = "filethumb";
+    thumb.hidden = true;
+    input.onchange = async () => {
+      const f = input.files && input.files[0];
+      if (!f) return;
+      pending = null;
+      $("submitBtn").disabled = true;
+      if (!me?.uploadToken) { status.textContent = "Join again to upload"; return; }
+      status.textContent = `Uploading ${f.name}…`;
+      try {
+        const res = await fetch(`uploads/${encodeURIComponent(me.uploadToken)}`, {
+          method: "POST", body: f, headers: { "Content-Type": f.type || "application/octet-stream", "X-File-Name": encodeURIComponent(f.name) },
+        }).then((r) => r.json());
+        if (!res.ok) throw new Error(res.error || "Upload failed");
+        pending = { file: res.id, name: res.name, type: res.type };
+        status.textContent = `${f.name} uploaded. Submit when you're ready.`;
+        if (f.type.startsWith("image/")) { thumb.src = URL.createObjectURL(f); thumb.hidden = false; }
+        $("submitBtn").disabled = false;
+      } catch (e) {
+        status.textContent = e.message;
+      }
+    };
+    wrap.append(input, pick, status, thumb);
+    area.appendChild(wrap);
+    $("submitRow").hidden = false;
+  },
+
+  hotspot: (q, area) => {
+    area.className = "pad center";
+    const box = document.createElement("div");
+    box.className = "hotspotbox";
+    const img = document.createElement("img");
+    img.src = q.image;
+    img.alt = "";
+    img.draggable = false;
+    const dot = document.createElement("div");
+    dot.className = "hotdot";
+    dot.hidden = true;
+    box.append(img, dot);
+    box.onclick = (e) => {
+      const r = img.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const x = Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1);
+      const y = Math.min(Math.max((e.clientY - r.top) / r.height, 0), 1);
+      dot.style.left = `${x * 100}%`;
+      dot.style.top = `${y * 100}%`;
+      dot.hidden = false;
+      pending = { x, y };
+      $("submitBtn").disabled = false;
+    };
+    area.appendChild(box);
+    $("submitRow").hidden = false;
   },
 
   wordcloud: (q, area) => {
@@ -284,10 +527,28 @@ function startTimer(endsAt, totalMs) {
 function answer(response) {
   if (paused) { $("status").textContent = "The host paused the game"; return; }
   socket.emit("player:answer", response, (res) => {
-    if (res.ok) { $("answeredTitle").textContent = "Answer locked in"; show("answered"); }
-    else $("status").textContent = res.error;
+    if (!res.ok) { $("status").textContent = res.error; return; }
+    // homework grades on the spot: the result comes back with the acknowledgement
+    if (res.result) { renderResult(res.result); return; }
+    // The last answer ends the question, and the server sends the results
+    // before it acknowledges the answer. By the time this runs the result
+    // screen may already be up, and must not be covered by "locked in".
+    if (!$("question").classList.contains("active")) return;
+    $("answeredTitle").textContent = "Answer locked in";
+    show("answered");
   });
 }
+
+// homework: the student decides when to move on
+$("nextBtn").onclick = () => {
+  $("nextBtn").disabled = true;
+  socket.emit("player:next", (res) => {
+    $("nextBtn").disabled = false;
+    if (!res.ok) { $("status").textContent = res.error; return; }
+    if (res.question) renderQuestion(res.question);
+    else renderEnd(res.end);
+  });
+};
 
 socket.on("game:question", (q) => { lastQuestion = q; renderQuestion(q); });
 
@@ -303,10 +564,15 @@ socket.on("game:hostaway", ({ away }) => {
   $("status").textContent = away ? "Waiting for the host to reconnect…" : "";
 });
 
-socket.on("game:results", (r) => {
+socket.on("game:results", renderResult);
+
+function renderResult(r) {
   clearInterval(timerHandle);
   const box = $("resultBox");
   const partial = r.ratio > 0 && r.correct !== true;
+  const scoring = r.scoring !== false;
+  $("nextBtn").hidden = !r.selfPaced;
+  $("nextBtn").textContent = r.isLast ? "See how you did" : "Next question";
 
   const answerLine = $("resultAnswer");
   answerLine.textContent = "";
@@ -323,7 +589,7 @@ socket.on("game:results", (r) => {
     const noAnswer = r.endedBy === "host" ? "No answer" : "Time's up";
     $("resultTitle").textContent = r.correct ? "Correct!" : partial ? "Close!" : !r.answered ? noAnswer : "Wrong";
     const total = r.gained + (r.bonus || 0);
-    $("resultPts").textContent = total > 0 ? `+${total} points` : "";
+    $("resultPts").textContent = scoring && total > 0 ? `+${total} points` : "";
     // always both halves: the right answer alone leaves them guessing what they
     // picked, and with phoneText off they never saw the question either
     const lines = [];
@@ -333,15 +599,30 @@ socket.on("game:results", (r) => {
   }
 
   const streak = $("resultStreak");
-  streak.hidden = !(r.correct && r.streak >= 2);
+  streak.hidden = !(scoring && r.correct && r.streak >= 2);
   if (!streak.hidden) streak.textContent = `🔥 ${r.streak} in a row` + (r.bonus ? ` · +${r.bonus} bonus` : "");
 
-  const moved = (r.prevRank ?? r.rank) - r.rank;
-  const movement = moved > 0 ? ` · up ${moved} place${moved > 1 ? "s" : ""}` : moved < 0 ? ` · down ${-moved}` : "";
-  $("resultRank").textContent = `Rank #${r.rank} · ${r.score} pts${movement}`;
   const ex = $("resultExplain");
   ex.hidden = !r.explanation;
   ex.textContent = r.explanation || "";
+
+  const tl = $("resultTeam");
+  tl.hidden = !(scoring && r.team);
+  if (!tl.hidden) {
+    tl.className = `teamline t${r.team.index}`;
+    tl.textContent = `${r.team.name}: ${r.team.score} pts` + (r.team.rank ? ` · team rank #${r.team.rank}` : "");
+  }
+
+  // lecture mode and homework have no standings to report between questions
+  if (!scoring || r.selfPaced) {
+    $("resultRank").textContent = scoring && r.selfPaced ? `${r.score} pts so far` : "";
+    $("resultGap").textContent = "";
+    show("result");
+    return;
+  }
+  const moved = (r.prevRank ?? r.rank) - r.rank;
+  const movement = moved > 0 ? ` · up ${moved} place${moved > 1 ? "s" : ""}` : moved < 0 ? ` · down ${-moved}` : "";
+  $("resultRank").textContent = `Rank #${r.rank} · ${r.score} pts${movement}`;
 
   // being level is reported here rather than in the gap, which now always
   // points at somebody genuinely ahead
@@ -353,13 +634,29 @@ socket.on("game:results", (r) => {
   else if (!bits.length && r.rank === 1) bits.push(r.score > 0 ? "You're in the lead!" : "Nobody has scored yet");
   $("resultGap").textContent = bits.join(" · ");
   show("result");
-});
+}
 
-socket.on("game:end", (r) => {
-  $("endRank").textContent = `#${r.rank} of ${r.players}`;
-  $("endScore").textContent = `${r.score} points`;
+socket.on("game:end", renderEnd);
+
+function renderEnd(r) {
+  clearInterval(timerHandle);
+  const scoring = r.scoring !== false;
+  const homework = me?.selfPaced;
+  $("endHeading").textContent = homework ? "All done" : "Game over";
+  // no points means no rank; say thank you and leave it there
+  $("endRank").textContent = scoring && r.rank ? `#${r.rank} of ${r.players}` : (scoring ? "" : "Thanks for taking part");
+  $("endScore").textContent = scoring ? `${r.score} points` : "";
+  const note = $("endNote");
+  note.hidden = !(homework || (scoring && r.team));
+  if (homework) {
+    note.textContent = scoring && r.players > 1
+      ? `Ranked among the ${r.players} who have finished so far. Your answers are saved.`
+      : "Your answers are saved.";
+  } else if (scoring && r.team) {
+    note.textContent = `${r.team.name} finished ${r.team.rank === 1 ? "first" : `#${r.team.rank}`} with ${r.team.score} pts per player`;
+  }
   show("end");
-});
+}
 
 socket.on("game:restarted", () => {
   clearInterval(timerHandle);

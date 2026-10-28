@@ -226,6 +226,66 @@ button.choice { justify-content: flex-start; }
 .orderlist.result .orderitem.correct { border-color: var(--ok); }
 
 .waitnote { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; }
+
+/* numeric answer */
+.numericbox { display: flex; align-items: center; gap: 0.75rem; }
+.numericbox .answerinput { flex: 1; }
+.numericbox .unit { font-size: 1.3rem; font-weight: 700; }
+
+/* fill in the blank: inputs sit inline in the sentence */
+.blanktext { font-size: clamp(1.2rem, 3vw, 1.8rem); line-height: 2.2; text-align: center; margin: 0; }
+.blankinput {
+  display: inline-block; width: 9em; max-width: 60vw; margin: 0 0.25em;
+  font-size: inherit; padding: 0.15em 0.5em; text-align: center;
+  border-bottom: 3px solid #f56600; border-radius: 0.4rem 0.4rem 0 0;
+}
+.blanktext .filled { color: var(--ok); border-bottom: 3px solid var(--ok); padding: 0 0.3em; }
+.blanksresult { display: flex; flex-direction: column; gap: 0.75rem; justify-content: center; flex: 1; }
+.blankrow { display: flex; gap: 1rem; align-items: baseline; justify-content: center; flex-wrap: wrap; font-size: 1.2rem; }
+.blankrow .tally { font-weight: 700; }
+
+/* long answer */
+.longinput { width: 100%; max-width: none; font-size: 1.1rem; padding: 0.9rem; resize: vertical; min-height: 8rem; }
+.charcount { text-align: right; }
+.textsresult { flex: 1; display: flex; flex-wrap: wrap; gap: 0.6rem; align-content: flex-start; overflow-y: auto; max-height: 60vh; }
+.textcard { background: var(--panel); border-radius: 0.6rem; padding: 0.7rem 0.9rem; flex: 1 1 18rem; font-size: 1.05rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* matching: two columns, tap left then right */
+/* the id rule on #answerArea makes it a flex column; the grid has to outrank it */
+.matchbox, #answerArea.matchbox { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; align-content: center; }
+.matchcol { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.matchitem {
+  display: flex; align-items: center; gap: 0.5rem; width: 100%;
+  background: var(--panel); color: var(--text); border-radius: 0.6rem;
+  padding: 0.8rem 0.7rem; font-size: 1rem; font-weight: 600; text-align: left;
+  border: 2px solid transparent; min-height: 3.4rem;
+}
+.matchitem .pos {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  min-width: 1.7rem; height: 1.7rem; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15); font-weight: 800; font-size: 0.9rem;
+}
+.matchitem .pos:empty { display: none; }
+.matchitem .label { flex: 1; overflow-wrap: anywhere; }
+.matchitem.active { border-color: #f56600; }
+.matchitem.paired { background: #6b3a9e; }
+.matchitem.paired .pos { background: #f56600; }
+.matchbox.host .matchitem { cursor: default; font-size: clamp(1rem, 2.2vw, 1.5rem); }
+
+/* tap the picture */
+.hotspotbox { position: relative; display: block; width: fit-content; max-width: 100%; line-height: 0; user-select: none; -webkit-user-select: none; }
+.hotspotbox img { max-width: 100%; max-height: 55vh; display: block; border-radius: 0.5rem; cursor: crosshair; }
+.hotdot {
+  position: absolute; width: 1.4rem; height: 1.4rem; border-radius: 50%;
+  transform: translate(-50%, -50%); background: #f56600; border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #0008; pointer-events: none;
+}
+.hotdot.ok { background: var(--ok); width: 1rem; height: 1rem; }
+.hotdot.bad { background: var(--c0); width: 1rem; height: 1rem; }
+.hottarget { position: absolute; border: 4px solid var(--ok); background: rgba(38, 137, 12, 0.25); border-radius: 0.3rem; pointer-events: none; }
+.hotspotresult { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; }
+.numbersresult { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 0.4rem; }
+.numbersresult .dbar { font-size: 1.3rem; }
 .scalebox { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 1rem; }
 .scalebox .scale { font-size: 1.4rem; font-weight: 700; }
 
@@ -511,6 +571,14 @@ button.typecard:hover { background: #ffffff26; border-color: var(--accent, #f566
 }
 .preview-choice .sym { font-size: 1.2em; }
 .preview-item { padding: 0.6rem 0.8rem; background: #ffffff1f; border-radius: 0.5rem; }
+.preview-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.preview-cols > div { display: flex; flex-direction: column; gap: 0.5rem; }
+.preview-blank { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.75rem; line-height: 1.8; }
+.preview-gap { display: inline-block; width: 6em; border-bottom: 2px solid #f56600; }
+/* the editor's target picker */
+.hotpick { position: relative; display: block; width: fit-content; max-width: 100%; line-height: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
+.hotpick img { max-width: 100%; max-height: 50vh; display: block; border-radius: 0.5rem; cursor: crosshair; }
+.hotpick.preview img { cursor: default; }
 .preview-input {
   padding: 0.9rem; border: 2px dashed #ffffff3d; border-radius: 0.5rem;
   text-align: center; opacity: 0.75;
@@ -561,3 +629,56 @@ details.qcard-edit { display: block; padding: 0; }
    the card they sit in, whatever is beside them. */
 #editView input, #editView textarea, #editView select { max-width: 100%; }
 .field, .doc label { min-width: 0; }
+
+/* ---------- host setup: lecture mode, homework, quick questions ---------- */
+.setup-check { display: inline-flex; align-items: center; gap: 0.5rem; margin: 0.25rem 0; }
+.assignpanel { max-width: 34rem; width: 100%; text-align: left; display: flex; flex-direction: column; gap: 0.75rem; }
+.assignpanel h3 { margin: 0; }
+.assignpanel .field { display: flex; flex-direction: column; gap: 0.3rem; }
+.assignpanel input[type="datetime-local"] { width: auto; max-width: 100%; }
+.assignlist { width: 100%; max-width: 44rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.assignlist h3 { margin: 0.5rem 0 0; }
+.assigncard { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; background: var(--panel); border-radius: 0.6rem; padding: 0.75rem 1rem; text-align: left; }
+.assignmain { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.assigntitle { overflow-wrap: anywhere; }
+.composer { max-width: 36rem; width: 100%; }
+.composer .field { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.5rem 0; }
+.composer select, .composer input { max-width: none; width: 100%; }
+/* lecture mode: the results screen is the chart alone */
+body.no-scoring .results-layout { grid-template-columns: minmax(0, 1fr); }
+body.no-scoring .results-board { display: none; }
+.gradebook-row { justify-content: flex-start; margin-bottom: 0.75rem; }
+.gradebook-row .search { flex: 1 1 14rem; margin: 0; }
+#result #nextBtn { margin-top: 1rem; align-self: center; }
+
+/* ---------- teams ---------- */
+.t0 { --team: var(--c0); } .t1 { --team: var(--c1); } .t2 { --team: var(--c2); } .t3 { --team: var(--c3); }
+.t4 { --team: #7b2cbf; } .t5 { --team: #f56600; }
+.chip.t0, .chip.t1, .chip.t2, .chip.t3, .chip.t4, .chip.t5 { background: var(--team); color: #fff; }
+ol.board li.t0, ol.board li.t1, ol.board li.t2, ol.board li.t3, ol.board li.t4, ol.board li.t5 { border-left: 0.5rem solid var(--team); }
+ol.board li .members { display: block; font-size: 0.85rem; font-weight: 400; }
+.teamline { font-weight: 700; padding: 0.3rem 0.8rem; border-radius: 2rem; display: inline-block; background: var(--team, var(--panel)); color: #fff; }
+
+/* ---------- media, badges, files ---------- */
+.badge { background: #f56600; color: #fff; border-radius: 2rem; padding: 0.1rem 0.8rem; font-size: 0.95rem; font-weight: 700; align-self: center; }
+.qmedia { display: flex; justify-content: center; max-height: 40vh; min-height: 0; }
+.qmedia iframe, .qmedia video { width: min(100%, 64vh * 16 / 9); aspect-ratio: 16 / 9; height: auto; max-height: 40vh; border: 0; border-radius: 0.75rem; background: #000; }
+.qmedia audio { width: min(100%, 40rem); }
+.filebox { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.filestatus { text-align: center; }
+.filethumb { max-width: 60vw; max-height: 30vh; border-radius: 0.5rem; }
+.filesresult { flex: 1; display: flex; flex-wrap: wrap; gap: 0.75rem; align-content: flex-start; overflow-y: auto; max-height: 60vh; }
+.filecard { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; width: 11rem; background: var(--panel); border-radius: 0.6rem; padding: 0.5rem; color: var(--text); text-decoration: none; }
+.filecard img { width: 100%; height: 8rem; object-fit: cover; border-radius: 0.4rem; }
+.fileicon { display: flex; align-items: center; justify-content: center; width: 100%; height: 8rem; font-weight: 800; font-size: 1.5rem; background: #ffffff14; border-radius: 0.4rem; }
+.filename { font-size: 0.85rem; overflow-wrap: anywhere; text-align: center; }
+
+/* ---------- marking by hand (reports) ---------- */
+.markrow { display: grid; grid-template-columns: 10rem minmax(0, 1fr) auto; gap: 0.75rem; align-items: start; padding: 0.6rem 0; border-top: 1px solid #ffffff1a; }
+.markwho { font-weight: 600; overflow-wrap: anywhere; }
+.marktext { white-space: pre-wrap; overflow-wrap: anywhere; }
+.markthumb { display: block; max-width: 16rem; max-height: 12rem; margin-top: 0.4rem; border-radius: 0.4rem; }
+.marks { display: flex; gap: 0.3rem; }
+.marks button.on { background: #f56600; color: #fff; }
+@media (max-width: 40rem) { .markrow { grid-template-columns: 1fr; } }
+.btnlink.small { padding: 0.35rem 0.6rem; font-size: 0.9rem; }

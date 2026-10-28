@@ -118,6 +118,8 @@
     </div>
     <pre id="fmtHelp" class="hint"></pre>
     <textarea id="importText" rows="12" placeholder="Paste here"></textarea>
+    <p class="muted small">Or drop in a spreadsheet: Kahoot's template, a Wayground export, or a .csv or .xlsx with our own columns.
+      <input type="file" id="importFile" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></p>
     <div id="importPreview" class="muted"></div>
     <div class="row">
       <button id="doImport" class="primary">Add questions</button>
@@ -150,6 +152,7 @@
   </div>
 </div>
 
+<script src="import.js"></script>
 <script src="edit.js"></script>
 </body>
 </html>

@@ -13,6 +13,7 @@ import { normalizeQuestion, TYPES, normText } from "../lib/questions.js";
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const QUIZ_DIR = path.join(ROOT, "quizzes");
 const IMAGE_DIR = path.join(QUIZ_DIR, "images");
+const MEDIA_DIR = path.join(QUIZ_DIR, "media");
 const ROSTER_DIR = path.join(QUIZ_DIR, "rosters");
 
 const C = process.stdout.isTTY
@@ -119,16 +120,36 @@ async function checkQuiz(file) {
       if (steps > 1000) warn(`${at}: ${Math.round(steps)} steps is hard to hit on a phone`);
       if (!q.tolerance) warn(`${at}: no tolerance set, defaulting to 5% of the range`);
     }
+    if (q.type === "numeric" && !q.tolerance && !Number.isInteger(q.answer)) warn(`${at}: no tolerance set, only exactly ${q.answer} will count`);
+    if (q.type === "blank") {
+      if (q.blanks.some((b) => b.length === 1)) warn(`${at}: a blank has only one accepted spelling, consider listing alternatives`);
+      if (q.blanks.some((b) => b.some((a) => a.length > 30))) warn(`${at}: a long blank answer is hard to type exactly`);
+    }
+    if (q.type === "match") {
+      const rights = q.pairs.map((p) => normText(p.right));
+      const lefts = q.pairs.map((p) => normText(p.left));
+      if (new Set(rights).size !== rights.length) err(`${at}: two pairs share the same right-hand item, so they cannot be told apart`);
+      if (new Set(lefts).size !== lefts.length) err(`${at}: two pairs share the same left-hand item`);
+    }
+    if (q.type === "hotspot" && q.target.w * q.target.h > 0.5)
+      warn(`${at}: the target covers more than half the picture`);
     if (q.type === "multi" && q.answers.length === q.choices.length)
       warn(`${at}: every choice is correct`);
     if (q.type === "slide" && !q.text && !q.image) warn(`${at}: slide has neither text nor an image`);
     // an explanation is what turns a wrong answer into something learned
-    if (!q.explanation && q.type !== "slide" && q.type !== "poll" && q.type !== "wordcloud")
+    if (!q.explanation && !["slide", "poll", "wordcloud", "longtext"].includes(q.type))
       warn(`${at}: no explanation, students will not learn why they were wrong`);
     if (q.explanation && q.explanation.length > 300) warn(`${at}: explanation is ${q.explanation.length} characters, it may not fit`);
     if (q.discuss && !["choice", "truefalse", "multi"].includes(q.type))
       warn(`${at}: discuss only affects choice-style questions`);
 
+    if (rawQ.media && !q.media) warn(`${at}: media "${rawQ.media}" is not a YouTube link or a video or audio file, so it will be ignored`);
+    if (q.media && q.media.src && q.media.src.startsWith("/quiz-media/")) {
+      const fileName = decodeURIComponent(q.media.src.replace("/quiz-media/", ""));
+      if (!(await exists(path.join(MEDIA_DIR, fileName)))) err(`${at}: media "${fileName}" not found in quizzes/media/`);
+    }
+    if (rawQ.anonymous && !q.anonymous) warn(`${at}: anonymous only applies to polls, word clouds, written answers and files`);
+    if (rawQ.weight != null && q.weight === 1 && Number(rawQ.weight) !== 1) warn(`${at}: weight must be 0, 0.5, 1 or 2; using 1`);
     // images are referenced by name, so a typo only shows up at game time
     if (q.image && q.image.startsWith("/quiz-images/")) {
       const fileName = decodeURIComponent(q.image.replace("/quiz-images/", ""));

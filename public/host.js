@@ -18,6 +18,9 @@ let phase = "setup";
 let current = null; // the question on screen
 let paused = false;
 let questions = []; // titles for the jump menus
+let scoring = true; // false is lecture mode: no points, no leaderboard
+let teams = null;   // team names when the game is played in teams
+let adhoc = false;  // a quick-question game: no quiz file, the host composes each one
 
 const SESSION_KEY = "tigerquiz.host";
 const saveSession = () => { try { localStorage.setItem(SESSION_KEY, JSON.stringify({ pin, hostToken })); } catch {} };
@@ -73,7 +76,24 @@ async function withHostKey(fn) {
 
 $("createBtn").onclick = () => {
   Sound.init(); // audio must be unlocked by a click
-  withHostKey((key) => socket.emit("host:create", { quizId: $("quizSel").value, rosterId: $("rosterSel").value || null, key }, (res) => {
+  withHostKey((key) => socket.emit("host:create", {
+    quizId: $("quizSel").value, rosterId: $("rosterSel").value || null, key, scoring: !$("lectureMode").checked,
+    teams: Number($("teamSel").value) || 0,
+  }, (res) => {
+    if (!res.ok) { $("setupErr").textContent = res.error; return; }
+    adopt(res);
+    renderPlayers([]);
+    show("lobby");
+  }));
+};
+
+// no quiz at all: open a room and make each question up as the lesson goes
+$("quickBtn").onclick = () => {
+  Sound.init();
+  withHostKey((key) => socket.emit("host:create", {
+    quick: true, rosterId: $("rosterSel").value || null, key, scoring: !$("lectureMode").checked,
+    teams: Number($("teamSel").value) || 0,
+  }, (res) => {
     if (!res.ok) { $("setupErr").textContent = res.error; return; }
     adopt(res);
     renderPlayers([]);
@@ -86,9 +106,19 @@ function adopt(res) {
   pin = res.pin;
   hostToken = res.hostToken;
   questions = res.questions || [];
+  scoring = res.scoring !== false;
+  adhoc = !!res.adhoc;
+  teams = res.teams || null;
+  $("teamNote").hidden = !teams;
   saveSession();
   phase = "lobby";
-  $("lobbyTitle").textContent = res.title;
+  $("lobbyTitle").textContent = res.title + (scoring ? "" : " · lecture mode");
+  // a quick-question game has nothing to start: the first question starts it
+  $("startBtn").hidden = adhoc;
+  $("askFirstBtn").hidden = !adhoc;
+  $("jumpSel").hidden = adhoc;
+  $("rJumpSel").hidden = adhoc;
+  document.body.classList.toggle("no-scoring", !scoring);
   $("lobbyPin").textContent = pin;
   $("joinUrl").textContent = `${location.host}${BASE}`;
   $("hostPin").textContent = `PIN ${pin}`;
@@ -153,20 +183,28 @@ socket.on("connect", tryResume);
 function renderPlayers(players) {
   const box = $("players");
   box.innerHTML = "";
-  for (const p of players) {
+  // in a team game the chips wear their team's colour, grouped by team
+  const ordered = teams ? [...players].sort((a, b) => (a.team ?? 0) - (b.team ?? 0)) : players;
+  for (const p of ordered) {
     const c = document.createElement("span");
-    c.className = "chip" + (p.connected ? "" : " off");
-    c.textContent = p.name;
+    c.className = "chip" + (p.connected ? "" : " off") + (teams && p.team != null ? ` t${p.team}` : "");
+    c.textContent = teams && p.team != null ? `${p.name} · ${teams[p.team].replace("Team ", "")}` : p.name;
     c.title = "Remove";
     c.onclick = () => confirm(`Remove ${p.name}?`) && socket.emit("host:kick", p.name);
     box.appendChild(c);
   }
   $("playerCount").textContent = players.length;
   $("startBtn").disabled = players.length === 0;
+  $("askFirstBtn").disabled = players.length === 0;
 }
 socket.on("lobby:players", renderPlayers);
+// an ad-hoc game grows a question at a time; keep the jump menus honest anyway
+socket.on("game:questions", (qs) => { questions = qs; fillJumpMenus(); });
 
 $("startBtn").onclick = () => socket.emit("host:start", {});
+$("askFirstBtn").onclick = () => openComposer();
+$("askAgainBtn").onclick = () => openComposer();
+$("finishBtn").onclick = () => socket.emit("host:finish");
 $("nextBtn").onclick = () => socket.emit("host:next");
 $("skipBtn").onclick = () => socket.emit("host:skip");
 $("prevBtn").onclick = () => socket.emit("host:prev");
@@ -211,11 +249,12 @@ socket.on("game:paused", (p) => {
 document.addEventListener("keydown", (e) => {
   // keyboard shortcuts are for the host, not for whatever field has focus
   if (e.target instanceof HTMLElement && (e.target.tagName === "SELECT" || e.target.tagName === "INPUT")) return;
+  if (!$("askModal").hidden) return; // the composer owns the keyboard while it is open
   if (e.key === " " || e.key === "Enter") {
     e.preventDefault();
-    if (phase === "lobby") $("startBtn").click();
+    if (phase === "lobby") (adhoc ? $("askFirstBtn") : $("startBtn")).click();
     else if (phase === "question") $("skipBtn").click();
-    else if (phase === "results") $("nextBtn").click();
+    else if (phase === "results") (adhoc ? $("askAgainBtn") : $("nextBtn")).click();
   } else if (e.key === "ArrowLeft") {
     e.preventDefault();
     if (phase === "question" || phase === "results") socket.emit("host:prev");
@@ -242,8 +281,16 @@ socket.on("game:question", (q) => {
   const img = $("qImage");
   img.hidden = !q.image;
   img.src = q.image || "";
+  renderMedia(q.media);
   // the image and the answer area share the screen, so shrink the area when one is shown
-  $("question").classList.toggle("has-image", !!q.image);
+  $("question").classList.toggle("has-image", !!q.image || !!q.media);
+  const badges = [];
+  if (q.weight === 2) badges.push("Double points");
+  else if (q.weight === 0.5) badges.push("Half points");
+  else if (q.weight === 0) badges.push("No points");
+  if (q.anonymous) badges.push("Anonymous");
+  $("qBadge").hidden = !badges.length;
+  $("qBadge").textContent = badges.join(" · ");
   $("skipBtn").textContent = q.type === "slide" ? "Continue" : "End question now";
   $("qCount").textContent = q.revote
     ? `Question ${q.index + 1} of ${q.total} · second vote`
@@ -259,6 +306,33 @@ socket.on("game:question", (q) => {
   show("question");
 });
 
+/**
+ * A clip to play on the projector: a YouTube embed, or a video or audio file.
+ * It autoplays, which browsers allow here because the host has already
+ * clicked on this page; the controls stay for replaying it.
+ */
+function renderMedia(media) {
+  const box = $("qMedia");
+  box.innerHTML = "";
+  box.hidden = !media;
+  if (!media) return;
+  if (media.kind === "youtube") {
+    const f = document.createElement("iframe");
+    f.src = `https://www.youtube-nocookie.com/embed/${media.id}?autoplay=1&rel=0${media.start ? `&start=${media.start}` : ""}`;
+    f.allow = "autoplay; encrypted-media; picture-in-picture";
+    f.allowFullscreen = true;
+    f.title = "Video";
+    box.appendChild(f);
+    return;
+  }
+  const el = document.createElement(media.kind === "audio" ? "audio" : "video");
+  el.src = media.src + (media.start ? `#t=${media.start}` : "");
+  el.controls = true;
+  el.autoplay = true;
+  el.setAttribute("playsinline", "");
+  box.appendChild(el);
+}
+
 const LIVE = {
   choice: (q, body) => choiceTiles(q, body),
   truefalse: (q, body) => choiceTiles(q, body),
@@ -271,7 +345,35 @@ const LIVE = {
     body.querySelectorAll("span")[1].textContent = `${q.max}${q.unit ? " " + q.unit : ""}`;
   },
   text: (q, body) => { body.className = "waitnote"; body.innerHTML = `<p class="muted">Players are typing their answer</p>`; },
+  numeric: (q, body) => {
+    body.className = "waitnote";
+    body.innerHTML = `<p class="muted"></p>`;
+    body.firstChild.textContent = q.unit ? `Players are typing a number in ${q.unit}` : "Players are typing a number";
+  },
+  blank: (q, body) => {
+    body.className = "waitnote";
+    body.innerHTML = `<p class="muted"></p>`;
+    body.firstChild.textContent = q.blanks > 1 ? `Players are filling in ${q.blanks} blanks` : "Players are filling in the blank";
+  },
   wordcloud: (q, body) => { body.className = "waitnote"; body.innerHTML = `<p class="muted">Players are typing words</p>`; },
+  longtext: (q, body) => { body.className = "waitnote"; body.innerHTML = `<p class="muted">Players are writing their answers</p>`; },
+  file: (q, body) => { body.className = "waitnote"; body.innerHTML = `<p class="muted">Players are handing in a photo or a PDF</p>`; },
+  hotspot: (q, body) => { body.className = "waitnote"; body.innerHTML = `<p class="muted">Players are tapping the picture</p>`; },
+  match: (q, body) => {
+    body.className = "matchbox host";
+    for (const col of [q.lefts, q.rights]) {
+      const c = document.createElement("div");
+      c.className = "matchcol";
+      for (const label of col) {
+        const d = document.createElement("div");
+        d.className = "matchitem";
+        d.innerHTML = `<span class="label"></span>`;
+        d.querySelector(".label").textContent = label;
+        c.appendChild(d);
+      }
+      body.appendChild(c);
+    }
+  },
   order: (q, body) => {
     body.className = "orderlist host";
     q.items.forEach((label) => {
@@ -330,6 +432,7 @@ function startTimer(endsAt, totalMs) {
 socket.on("game:results", (r) => {
   phase = "results";
   clearInterval(timerHandle);
+  renderMedia(null); // stop whatever was playing
   $("rText").textContent = r.text;
   const body = $("rBody");
   body.className = "";
@@ -348,7 +451,11 @@ socket.on("game:results", (r) => {
   $("nextBtn").classList.toggle("primary", !(canRevote && r.suggestDiscussion));
 
   renderBoard($("board"), r.leaderboard);
-  $("nextBtn").textContent = r.isLast ? "Show final standings" : "Next question";
+  $("nextBtn").textContent = r.isLast ? (scoring ? "Show final standings" : "Finish") : "Next question";
+  // a quick-question game has no "next": the host asks another, or stops here
+  $("nextBtn").hidden = !!r.adhoc;
+  $("askAgainBtn").hidden = !r.adhoc;
+  $("finishBtn").hidden = !r.adhoc;
   $("rPrevBtn").disabled = false;
   Sound.reveal();
   show("results");
@@ -450,6 +557,137 @@ const SUMMARY = {
     });
   },
 
+  numbers: (r, body) => {
+    const s = r.summary;
+    body.className = "numbersresult";
+    if (!s.buckets.length) { body.innerHTML = `<p class="muted">No answers</p>`; return; }
+    const max = Math.max(1, ...s.buckets.map((b) => b.n));
+    const unit = s.unit ? ` ${s.unit}` : "";
+    for (const b of s.buckets) {
+      const row = document.createElement("div");
+      row.className = "dbar" + (b.correct ? " right" : " wrong");
+      row.innerHTML = `<div class="dbar-fill" style="width:${(b.n / max) * 100}%"></div><span class="dbar-label"></span><span class="dbar-n"></span>`;
+      row.querySelector(".dbar-label").textContent = `${b.value}${unit}${b.correct ? " \u2713" : ""}`;
+      row.querySelector(".dbar-n").textContent = String(b.n);
+      body.appendChild(row);
+    }
+    const p = document.createElement("p");
+    p.className = "answerline";
+    p.innerHTML = `Answer: <strong></strong> <span class="muted meanline"></span>`;
+    p.querySelector("strong").textContent = r.answer.label;
+    p.querySelector(".meanline").textContent = s.mean == null ? "" : `\u00b7 ${s.count} answers, average ${Math.round(s.mean * 100) / 100}${unit}`;
+    body.appendChild(p);
+  },
+
+  blanks: (r, body) => {
+    const s = r.summary;
+    body.className = "blanksresult";
+    // the sentence with the right words dropped in
+    const sentence = document.createElement("p");
+    sentence.className = "blanktext";
+    s.parts.forEach((part, i) => {
+      sentence.appendChild(document.createTextNode(part));
+      if (i < s.blanks.length) {
+        const w = document.createElement("strong");
+        w.className = "filled";
+        w.textContent = s.blanks[i].answer;
+        sentence.appendChild(w);
+      }
+    });
+    body.appendChild(sentence);
+    s.blanks.forEach((b, i) => {
+      const row = document.createElement("div");
+      row.className = "blankrow";
+      const head = document.createElement("span");
+      head.className = "tally";
+      head.textContent = `${s.blanks.length > 1 ? `Blank ${i + 1}: ` : ""}${b.right} of ${s.count} right`;
+      row.appendChild(head);
+      if (b.wrong.length) {
+        const alt = document.createElement("span");
+        alt.className = "muted";
+        alt.textContent = "also wrote " + b.wrong.map((w) => (w.n > 1 ? `${w.text} \u00d7${w.n}` : w.text)).join(", ");
+        row.appendChild(alt);
+      }
+      body.appendChild(row);
+    });
+  },
+
+  files: (r, body) => {
+    body.className = "filesresult";
+    const s = r.summary;
+    if (!s.files.length) { body.innerHTML = `<p class="muted">Nothing handed in</p>`; return; }
+    for (const f of s.files) {
+      const a = document.createElement("a");
+      a.className = "filecard";
+      a.href = `api/uploads/${encodeURIComponent(f.file)}`;
+      a.target = "_blank";
+      a.rel = "noopener";
+      if (String(f.type).startsWith("image/")) {
+        const img = document.createElement("img");
+        img.src = a.href;
+        img.alt = f.name || "";
+        img.loading = "lazy";
+        a.appendChild(img);
+      } else {
+        a.appendChild(Object.assign(document.createElement("span"), { className: "fileicon", textContent: "PDF" }));
+      }
+      a.appendChild(Object.assign(document.createElement("span"), { className: "filename", textContent: f.name || "file" }));
+      body.appendChild(a);
+    }
+  },
+
+  texts: (r, body) => {
+    body.className = "textsresult";
+    const s = r.summary;
+    if (!s.texts.length) { body.innerHTML = `<p class="muted">No answers</p>`; return; }
+    for (const t of s.texts) {
+      const card = document.createElement("div");
+      card.className = "textcard";
+      card.textContent = t;
+      body.appendChild(card);
+    }
+  },
+
+  match: (r, body) => {
+    body.className = "orderlist host result";
+    const s = r.summary;
+    s.pairs.forEach((p, i) => {
+      const d = document.createElement("div");
+      d.className = "orderitem correct";
+      d.innerHTML = `<span class="label"></span><span class="tally"></span>`;
+      d.querySelector(".label").textContent = `${p.left} \u2192 ${p.right}`;
+      d.querySelector(".tally").textContent = `${s.perPair[i]} right`;
+      body.appendChild(d);
+    });
+  },
+
+  hotspot: (r, body) => {
+    const s = r.summary;
+    body.className = "hotspotresult";
+    const box = document.createElement("div");
+    box.className = "hotspotbox";
+    const img = document.createElement("img");
+    img.src = s.image;
+    img.alt = "";
+    const t = document.createElement("div");
+    t.className = "hottarget";
+    Object.assign(t.style, { left: `${s.target.x * 100}%`, top: `${s.target.y * 100}%`, width: `${s.target.w * 100}%`, height: `${s.target.h * 100}%` });
+    box.append(img, t);
+    for (const p of s.points) {
+      const d = document.createElement("div");
+      d.className = "hotdot " + (p.correct ? "ok" : "bad");
+      d.style.left = `${p.x * 100}%`;
+      d.style.top = `${p.y * 100}%`;
+      box.appendChild(d);
+    }
+    body.appendChild(box);
+    const right = s.points.filter((p) => p.correct).length;
+    const p = document.createElement("p");
+    p.className = "answerline";
+    p.textContent = s.points.length ? `${right} of ${s.points.length} tapped inside the target` : "Nobody tapped";
+    body.appendChild(p);
+  },
+
   none: (r, body) => {
     body.className = "waitnote";
     body.innerHTML = `<p class="muted">No answers to show</p>`;
@@ -460,9 +698,12 @@ function renderBoard(ol, rows) {
   ol.innerHTML = "";
   for (const p of rows) {
     const li = document.createElement("li");
-    li.innerHTML = `<span></span><span></span>`;
-    li.firstChild.textContent = `#${p.rank}  ${p.name}`;
-    li.lastChild.textContent = `${p.score}`;
+    // a team row carries its members, and its colour
+    if (p.members) li.classList.add(`t${p.team}`);
+    li.innerHTML = `<span><span class="who"></span><span class="members muted"></span></span><span></span>`;
+    li.querySelector(".who").textContent = `${p.rank ? `#${p.rank}  ` : ""}${p.name}`;
+    if (p.members) li.querySelector(".members").textContent = p.members.length ? ` ${p.members.join(", ")}` : " nobody yet";
+    li.lastChild.textContent = p.members ? `${p.score} avg` : `${p.score}`;
     ol.appendChild(li);
   }
 }
@@ -472,13 +713,159 @@ socket.on("game:end", (r) => {
   paused = false;
   renderPaused();
   clearSession(); // the game is over; nothing left to resume
-  renderBoard($("finalBoard"), r.leaderboard);
   $("reportLink").href = r.reportId ? `reports.html#${r.reportId}` : "reports.html";
   $("reportLink").hidden = !r.reportId;
-  $("replayBtn").hidden = !r.leaderboard.length;
+  $("replayBtn").hidden = !r.leaderboard.length || adhoc;
+  const note = $("endNote");
+  if (r.scoring === false) {
+    // lecture mode: there are no standings to reveal, only a report to read
+    $("endHeading").textContent = "That's everything";
+    note.hidden = false;
+    note.textContent = `${r.leaderboard.length} took part. Every answer is in the report.`;
+    $("podium").innerHTML = "";
+    $("finalBoard").innerHTML = "";
+    $("finalBoard").hidden = true;
+    show("end");
+    return;
+  }
+  $("endHeading").textContent = "Final standings";
+  note.hidden = true;
+  renderBoard($("finalBoard"), r.leaderboard);
   show("end");
   runPodium(r.leaderboard);
 });
+
+// ---------- quick questions: the composer ----------
+function openComposer() {
+  $("askErr").textContent = "";
+  $("askText").value = "";
+  syncComposer();
+  $("askModal").hidden = false;
+  setTimeout(() => $("askText").focus(), 50);
+}
+function syncComposer() {
+  const kind = $("askKind").value;
+  const n = Number($("askCount").value);
+  $("askCountField").hidden = kind !== "choice";
+  $("askAnswerField").hidden = !(kind === "choice" || kind === "truefalse");
+  $("askAcceptField").hidden = !(kind === "text" || kind === "numeric");
+  $("askAcceptField").querySelector(".fieldlabel").textContent = kind === "numeric"
+    ? "Correct number (leave blank for no right answer)" : "Accepted answer (leave blank for no right answer)";
+  const sel = $("askAnswer");
+  sel.innerHTML = "";
+  const opts = kind === "truefalse" ? ["True", "False"] : Array.from({ length: n }, (_, i) => "ABCD"[i]);
+  for (const o of opts) {
+    const el = document.createElement("option");
+    el.value = o; el.textContent = o;
+    sel.appendChild(el);
+  }
+  if (kind === "choice") {
+    const none = document.createElement("option");
+    none.value = ""; none.textContent = "No right answer (poll)";
+    sel.appendChild(none);
+  }
+}
+$("askKind").onchange = syncComposer;
+$("askCount").onchange = syncComposer;
+$("askCancel").onclick = () => { $("askModal").hidden = true; };
+$("askGo").onclick = () => {
+  const kind = $("askKind").value;
+  const time = Number($("askTime").value) || 30;
+  const text = $("askText").value.trim() || `Question ${questions.length + 1}`;
+  let q;
+  if (kind === "choice") {
+    const n = Number($("askCount").value);
+    const choices = Array.from({ length: n }, (_, i) => "ABCD"[i]);
+    const ans = $("askAnswer").value;
+    q = ans ? { type: "choice", text, choices, answer: choices.indexOf(ans), time } : { type: "poll", text, choices, time };
+  } else if (kind === "truefalse") {
+    q = { type: "truefalse", text, answer: $("askAnswer").value === "True", time };
+  } else if (kind === "text") {
+    const accept = $("askAccept").value.trim();
+    q = accept ? { type: "text", text, accept: [accept], time } : { type: "wordcloud", text, maxWords: 1, time };
+  } else if (kind === "numeric") {
+    const accept = $("askAccept").value.trim();
+    q = accept ? { type: "numeric", text, answer: Number(accept), time } : { type: "wordcloud", text, maxWords: 1, time };
+  } else if (kind === "wordcloud") {
+    q = { type: "wordcloud", text, maxWords: 1, time };
+  } else {
+    q = { type: "longtext", text, time };
+  }
+  socket.emit("host:ask", q, (res) => {
+    if (!res.ok) { $("askErr").textContent = res.error; return; }
+    $("askModal").hidden = true;
+  });
+};
+// ---------- homework: self-paced assignments ----------
+$("assignBtn").onclick = () => {
+  $("assignPanel").hidden = !$("assignPanel").hidden;
+  $("assignErr").textContent = "";
+};
+$("assignCancel").onclick = () => { $("assignPanel").hidden = true; };
+$("assignCreate").onclick = async () => {
+  $("assignErr").textContent = "";
+  const body = {
+    quizId: $("quizSel").value, rosterId: $("rosterSel").value || null,
+    dueAt: $("dueAt").value || null, scoring: !$("lectureMode").checked,
+  };
+  const res = await fetch("api/assignments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then((r) => r.json());
+  if (res.error) { $("assignErr").textContent = res.error; return; }
+  $("assignPanel").hidden = true;
+  await loadAssignments();
+  showAssignment(res);
+};
+
+function showAssignment(a) {
+  $("aTitle").textContent = a.title;
+  $("aCode").textContent = a.code;
+  $("aJoinUrl").textContent = `${location.host}${BASE}`;
+  $("aQr").src = `api/qr.svg?text=${encodeURIComponent(`${location.origin}${BASE}/?pin=${a.code}`)}`;
+  const due = a.dueAt ?? a.due_at;
+  $("aDue").textContent = due ? `Closes ${new Date(due).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}` : "Open until you close it";
+  show("assignShow");
+}
+$("aBack").onclick = () => show("setup");
+
+async function loadAssignments() {
+  let list;
+  try { list = await fetch("api/assignments").then((r) => r.json()); } catch { return; }
+  const box = $("assignments");
+  box.innerHTML = "";
+  const open = list.filter((a) => !a.closed_at && !(a.due_at && a.due_at < Date.now()));
+  if (!open.length) return;
+  const h = document.createElement("h3");
+  h.className = "muted";
+  h.textContent = "Open homework";
+  box.appendChild(h);
+  for (const a of open) {
+    const card = document.createElement("div");
+    card.className = "assigncard";
+    card.innerHTML = `<div class="assignmain"><strong class="assigntitle"></strong><span class="muted small assignmeta"></span></div><div class="row"></div>`;
+    card.querySelector(".assigntitle").textContent = `${a.title} · code ${a.code}`;
+    card.querySelector(".assignmeta").textContent =
+      `${a.finished} finished, ${a.started - a.finished} in progress` +
+      (a.due_at ? ` · closes ${new Date(a.due_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}` : "") +
+      (a.scoring ? "" : " · lecture mode");
+    const row = card.querySelector(".row");
+    const showBtn = document.createElement("button");
+    showBtn.textContent = "Show code";
+    showBtn.onclick = () => showAssignment(a);
+    const report = document.createElement("a");
+    report.className = "btnlink";
+    report.href = `reports.html#${a.game_id}`;
+    report.textContent = "Report";
+    const close = document.createElement("button");
+    close.textContent = "Close";
+    close.onclick = async () => {
+      if (!confirm(`Close "${a.title}"? Nobody can answer after this; the report stays.`)) return;
+      await fetch(`api/assignments/${encodeURIComponent(a.code)}`, { method: "DELETE" });
+      loadAssignments();
+    };
+    row.append(showBtn, report, close);
+    box.appendChild(card);
+  }
+}
+loadAssignments();
 
 // Reveal 3rd, then 2nd, then 1st with a drumroll between each; the full list follows.
 const PODIUM_STEP_MS = 2200;

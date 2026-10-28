@@ -31,7 +31,11 @@
     </div>
 
     <div id="studentsPane" hidden>
-      <input id="studentSearch" class="search" placeholder="Search students" autocomplete="off">
+      <div class="row gradebook-row">
+        <input id="studentSearch" class="search" placeholder="Search students" autocomplete="off">
+        <a id="gradebookPct" class="btnlink" href="api/students/csv?metric=percent" title="One row per student, one column per game, each cell the share of questions they got right">Download gradebook (% correct)</a>
+        <a id="gradebookPts" class="btnlink" href="api/students/csv?metric=points" title="The same sheet with game scores instead">Download gradebook (points)</a>
+      </div>
       <div class="tablewrap"><table id="studentTable"></table></div>
       <p id="noStudents" class="muted" hidden>Nobody has played a finished game yet.</p>
       <div id="studentDetail"></div>
@@ -63,6 +67,12 @@
     <h3>What people chose</h3>
     <p class="muted">The wrong answer a class lands on names the misconception. Correct answers are marked.</p>
     <div id="dDistract"></div>
+
+    <div id="dMarking" hidden>
+      <h3>To mark by hand</h3>
+      <p class="muted">Written answers and handed-in files. A mark earns points as a right answer would, scaled by the question's worth, and the scores and ranks here follow.</p>
+      <div id="dMarkList"></div>
+    </div>
 
     <h3>Players</h3>
     <div class="tablewrap"><table id="pTable"></table></div>

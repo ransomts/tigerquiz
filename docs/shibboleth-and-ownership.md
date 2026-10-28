@@ -34,7 +34,7 @@ second line: a proxy misconfiguration should cost a 401, not the class list.
 
 | Path | Session |
 | --- | --- |
-| `/`, `style.css`, `sound.js`, `socket.io/`, `/quiz-images/`, `/api/nickname`, `/api/me` | none — students join by PIN |
+| `/`, `style.css`, `sound.js`, `socket.io/`, `/quiz-images/`, `/quiz-media/`, `/uploads/`, `/api/nickname`, `/api/me` | none — students join by PIN |
 | `host.html`, `edit.html`, `reports.html`, everything else under `/api/` | required |
 
 `/api/qr.svg` is in the protected group: only the host screen ever asks for a

@@ -5,6 +5,14 @@ const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const fmtDate = (ms) => new Date(ms).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 const pct = (r) => (r == null ? "—" : `${Math.round(r * 100)}%`);
+/** How the game was run, when that is worth saying. */
+const kindLabel = (g) => {
+  const bits = [];
+  if (g.kind === "assignment") bits.push("homework");
+  else if (g.kind === "quick") bits.push("quick questions");
+  if (g.scoring === 0) bits.push("lecture mode");
+  return bits.join(", ");
+};
 
 // ---------- list ----------
 let allGames = [];
@@ -28,9 +36,10 @@ function drawGames() {
   for (const g of games) {
     const a = el("a", "card");
     a.href = `#${g.id}`;
+    const kind = kindLabel(g);
     a.append(
       el("div", "card-title", g.title),
-      el("div", "card-meta", `${fmtDate(g.started_at)} · ${g.player_count} players · ${g.question_count} questions`)
+      el("div", "card-meta", `${fmtDate(g.started_at)} · ${g.player_count} players · ${g.question_count} questions${kind ? ` · ${kind}` : ""}`)
     );
     box.appendChild(a);
   }
@@ -104,7 +113,8 @@ async function showDetail(id) {
   $("listView").hidden = true;
   $("detailView").hidden = false;
   $("dTitle").textContent = r.game.title;
-  $("dWhen").textContent = `${fmtDate(r.game.started_at)} · PIN ${r.game.pin}`;
+  const kind = kindLabel(r.game);
+  $("dWhen").textContent = `${fmtDate(r.game.started_at)} · ${r.game.kind === "assignment" ? "code" : "PIN"} ${r.game.pin}${kind ? ` · ${kind}` : ""}`;
   $("csvLink").href = `api/reports/${encodeURIComponent(id)}/csv`;
   const msg = $("dMsg");
   msg.hidden = true;
@@ -145,7 +155,7 @@ async function showDetail(id) {
     ["Players", r.players.length],
     ["Questions", r.questions.length],
     ["Class average", pct(avg)],
-    ["Top score", r.players.length ? r.players[0].score : 0],
+    [r.game.scoring === 0 ? "Points" : "Top score", r.game.scoring === 0 ? "off" : r.players.length ? r.players[0].score : 0],
   ]) {
     const s = el("div", "stat");
     s.append(el("div", "stat-value", String(value)), el("div", "stat-label", label));
@@ -193,14 +203,83 @@ async function showDetail(id) {
     r.questions.map((q) => (q.correctRate !== null && q.correctRate < 0.5 ? "warn" : "")));
 
   renderDistractors(r);
+  renderMarking(r, id);
 
   const idLabel = r.players.some((p) => p.identifier) ? "Identifier" : null;
+  const teamLabel = r.players.some((p) => p.team) ? "Team" : null;
   buildTable($("pTable"),
-    ["Rank", "Nickname", ...(idLabel ? [idLabel] : []), "Score", "Correct"],
+    ["Rank", "Nickname", ...(idLabel ? [idLabel] : []), ...(teamLabel ? [teamLabel] : []), "Score", "Correct"],
     r.players.map((p) => [
-      p.rank ?? "—", p.name, ...(idLabel ? [p.identifier ?? "—"] : []),
+      p.rank ?? "—", p.name, ...(idLabel ? [p.identifier ?? "—"] : []), ...(teamLabel ? [p.team ?? "—"] : []),
       p.score, p.scored ? `${p.correct}/${p.scored}` : "—",
     ]));
+}
+
+/**
+ * Written answers and uploaded files, one card per question, each answer with
+ * three marks to choose from. Anonymous questions cannot be marked, since
+ * there is nobody to credit.
+ */
+function renderMarking(r, gameId) {
+  const box = $("dMarkList");
+  box.innerHTML = "";
+  const gradable = r.questions.filter((q) => q.type === "longtext" || q.type === "file");
+  const items = [];
+  for (const q of gradable) {
+    for (const p of r.players) {
+      const a = p.answers.find((x) => x.idx === q.idx);
+      if (a && a.response != null) items.push({ q, p, a });
+    }
+  }
+  $("dMarking").hidden = !items.length;
+  if (!items.length) return;
+  for (const q of gradable) {
+    const mine = items.filter((it) => it.q === q);
+    if (!mine.length) continue;
+    const card = el("div", "qcard");
+    card.appendChild(el("div", "qcard-head", `Q${q.idx + 1}. ${q.text}${q.weight !== 1 ? ` (worth ×${q.weight})` : ""}`));
+    if (q.explanation) card.appendChild(el("div", "qcard-note", `Model answer: ${q.explanation}`));
+    for (const { p, a } of mine) {
+      const row = el("div", "markrow");
+      const who = el("div", "markwho", p.identifier ? `${p.name} · ${p.identifier}` : p.name);
+      const body = el("div", "markbody");
+      if (q.type === "file" && a.response && a.response.file) {
+        const link = el("a", "btnlink small", a.response.name || "Open file");
+        link.href = `api/uploads/${encodeURIComponent(a.response.file)}`;
+        link.target = "_blank";
+        link.rel = "noopener";
+        body.appendChild(link);
+        if (String(a.response.type || "").startsWith("image/")) {
+          const img = document.createElement("img");
+          img.className = "markthumb";
+          img.src = link.href;
+          img.alt = "";
+          img.loading = "lazy";
+          body.appendChild(img);
+        }
+      } else {
+        body.appendChild(el("div", "marktext", String(a.response)));
+      }
+      const marks = el("div", "marks");
+      const current = a.correct === true ? "right" : a.correct === false && a.points > 0 ? "partial" : a.correct === false ? "wrong" : null;
+      for (const [mark, label] of [["right", "Right"], ["partial", "Partial"], ["wrong", "Wrong"]]) {
+        const b = el("button", "small" + (current === mark ? " on" : ""), label);
+        b.onclick = async () => {
+          const next = current === mark ? null : mark; // clicking the current mark clears it
+          const res = await fetch(`api/reports/${encodeURIComponent(gameId)}/grade`, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ idx: q.idx, player: p.name, mark: next }),
+          }).then((x) => x.json());
+          if (res.error) { alert(res.error); return; }
+          showDetail(gameId); // scores and ranks moved; redraw from the server's view
+        };
+        marks.appendChild(b);
+      }
+      row.append(who, body, marks);
+      card.appendChild(row);
+    }
+    box.appendChild(card);
+  }
 }
 
 function renderDistractors(r) {

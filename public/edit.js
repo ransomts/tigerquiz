@@ -3,6 +3,7 @@
 // Returns any because nearly every caller immediately reaches for .value or
 // .checked on an input. Narrowing this means a cast at each of ~26 call sites;
 // see docs/typing.md before tightening it.
+/* global TQImport */
 /** @param {string} id @returns {any} */
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -23,28 +24,35 @@ let openQuestions = new Set();
 // ---------- question type definitions, mirroring the server ----------
 const TYPE_LABEL = {
   choice: "Multiple choice", truefalse: "True or false", multi: "Multiple correct answers",
-  slider: "Number guess", text: "Typed answer", order: "Put in order",
-  poll: "Poll", wordcloud: "Word cloud", slide: "Content slide",
+  slider: "Number guess", numeric: "Numeric answer", text: "Typed answer", blank: "Fill in the blank",
+  order: "Put in order", match: "Match the pairs", hotspot: "Tap the picture", longtext: "Written answer",
+  file: "Hand in a file", poll: "Poll", wordcloud: "Word cloud", slide: "Content slide",
 };
 
 /**
- * What each type is, in words rather than jargon, for the picker. Nine names in
- * a dropdown asked people to know all nine before seeing any of them; this says
- * what each one does and what it looks like.
+ * What each type is, in words rather than jargon, for the picker. Fourteen
+ * names in a dropdown would ask people to know them all before seeing any; this
+ * says what each one does and what it looks like.
  */
 const TYPES_HELP = [
   { type: "choice", icon: "\u25b2", blurb: "Players pick one answer from up to four.", eg: "Which planet is red?" },
   { type: "truefalse", icon: "\u2713", blurb: "Just two options: true or false.", eg: "The Pacific is the largest ocean." },
   { type: "multi", icon: "\u25c6", blurb: "More than one answer is right. Partial credit for getting some.", eg: "Which of these are mammals?" },
   { type: "text", icon: "\u270e", blurb: "Players type an answer. Spelling slips are forgiven.", eg: "What is the capital of France?" },
+  { type: "blank", icon: "\u2581", blurb: "A sentence with gaps for players to fill in. Mark each gap with ___.", eg: "Water boils at ___ degrees Celsius." },
   { type: "slider", icon: "\u2194", blurb: "Players guess a number on a slider. Close counts.", eg: "How tall is Everest, in metres?" },
+  { type: "numeric", icon: "#", blurb: "Players type a number. Right within a margin you set.", eg: "What is 17 \u00d7 23?" },
   { type: "order", icon: "\u2263", blurb: "Players drag items into the right order.", eg: "Put these events in order." },
+  { type: "match", icon: "\u21c4", blurb: "Two columns; players pair each item with its match.", eg: "Match each country to its capital." },
+  { type: "hotspot", icon: "\u25ce", blurb: "Players tap the right spot on a picture.", eg: "Tap the mitochondrion." },
+  { type: "longtext", icon: "\u00b6", blurb: "Players write a few sentences. Mark them yourself afterwards from the report.", eg: "Explain why the sky is blue." },
+  { type: "file", icon: "\u2912", blurb: "Players hand in a photo or a PDF from their phone. Mark it afterwards from the report.", eg: "Photograph your working for question 3." },
   { type: "poll", icon: "\u25cf", blurb: "No right answer \u2014 just see what the room thinks.", eg: "Which topic should we cover next?" },
   { type: "wordcloud", icon: "\u2601", blurb: "Everyone types a word, and the common ones grow larger.", eg: "One word for how today felt." },
   { type: "slide", icon: "\u25a0", blurb: "Not a question. A slide to talk over, with no timer.", eg: "Recap: three things to remember" },
 ];
 const HAS_CHOICES = new Set(["choice", "multi", "poll"]);
-const SCORED = new Set(["choice", "truefalse", "multi", "slider", "text", "order"]);
+const SCORED = new Set(["choice", "truefalse", "multi", "slider", "numeric", "text", "blank", "order", "match", "hotspot"]);
 
 function blankQuestion(type) {
   const q = { type, text: "", time: 20 };
@@ -55,8 +63,14 @@ function blankQuestion(type) {
   }
   if (type === "truefalse") q.answer = 0;
   if (type === "slider") Object.assign(q, { min: 0, max: 100, step: 1, answer: 50, tolerance: 5, unit: "" });
+  if (type === "numeric") Object.assign(q, { answer: 0, tolerance: 0, unit: "" });
   if (type === "text") q.accept = [""];
+  if (type === "blank") q.blanks = [[""]];
   if (type === "order") q.items = ["", "", ""];
+  if (type === "match") q.pairs = [{ left: "", right: "" }, { left: "", right: "" }, { left: "", right: "" }];
+  if (type === "hotspot") { q.image = ""; q.target = { x: 0.35, y: 0.35, w: 0.3, h: 0.3 }; q.time = 20; }
+  if (type === "longtext") { q.maxLength = 500; q.time = 90; }
+  if (type === "file") { q.accept = "any"; q.time = 180; }
   if (type === "wordcloud") q.maxWords = 1;
   if (type === "slide") q.time = 0;
   return q;
@@ -447,12 +461,29 @@ function questionCard(q, i) {
   body.appendChild(field("Question", textInput(q.text, (v) => { q.text = v; })));
   buildTypeFields(body, q);
 
-  body.appendChild(field("Image file (optional)", textInput(q.image || "", (v) => { q.image = v; }), "A file in quizzes/images/, or a full http address"));
+  if (q.type !== "hotspot") {
+    body.appendChild(field("Image file (optional)", textInput(q.image || "", (v) => { q.image = v; }), "A file in quizzes/images/, or a full http address"));
+  }
+  body.appendChild(mediaField(q));
   if (q.type !== "slide") {
     body.appendChild(field("Seconds to answer", numInput(q.time ?? 20, 1, 600, (v) => { q.time = v; })));
   }
   if (SCORED.has(q.type)) {
     body.appendChild(field("Explanation", textInput(q.explanation || "", (v) => { q.explanation = v; }), "Shown to everyone when the answer is revealed"));
+    const w = document.createElement("select");
+    for (const [v, label] of [["1", "Normal points"], ["2", "Double points"], ["0.5", "Half points"], ["0", "No points, still graded"]]) {
+      const o = document.createElement("option");
+      o.value = v; o.textContent = label;
+      w.appendChild(o);
+    }
+    w.value = String(q.weight ?? 1);
+    w.onchange = () => { q.weight = Number(w.value); touch(); };
+    body.appendChild(field("Worth", w));
+  } else if (q.type === "longtext" || q.type === "file") {
+    body.appendChild(field("Model answer (optional)", textInput(q.explanation || "", (v) => { q.explanation = v; }), "Shown to everyone once the answers are in"));
+  }
+  if (["poll", "wordcloud", "longtext", "file"].includes(q.type)) {
+    body.appendChild(checkbox("Anonymous: record the answers without names", !!q.anonymous, (v) => { q.anonymous = v; }));
   }
   if (["choice", "truefalse", "multi"].includes(q.type)) {
     body.appendChild(checkbox("Worth discussing, then voting again", !!q.discuss, (v) => { q.discuss = v; }));
@@ -626,12 +657,201 @@ function buildTypeFields(card, q) {
       card.appendChild(field("Items in the correct order", wrap, "Players see them shuffled"));
       break;
     }
+    case "numeric": {
+      const grid = el("div", "fieldgrid tight");
+      grid.append(
+        field("Correct value", numInput(q.answer ?? 0, -1e12, 1e12, (v) => { q.answer = v; })),
+        field("Allowed margin", numInput(q.tolerance ?? 0, 0, 1e12, (v) => { q.tolerance = v; }), "Full marks within this much either way"),
+        field("Unit", textInput(q.unit || "", (v) => { q.unit = v; })),
+      );
+      card.appendChild(grid);
+      break;
+    }
+    case "blank": {
+      // one answer list per ___ in the question text; the lists follow the gaps as they are typed
+      const gaps = Math.max((q.text || "").split(/_{3,}/).length - 1, 0);
+      if (!Array.isArray(q.blanks)) q.blanks = [];
+      while (q.blanks.length < gaps) q.blanks.push([""]);
+      if (q.blanks.length > gaps) q.blanks.length = gaps;
+      const wrap = el("div", "choices");
+      if (!gaps) wrap.appendChild(el("p", "hint-inline", "Type ___ (three underscores) in the question wherever a word is missing."));
+      q.blanks.forEach((accept, bi) => {
+        const block = el("div", "choices");
+        block.appendChild(el("span", "fieldlabel", gaps > 1 ? `Blank ${bi + 1}` : "The missing word"));
+        accept.forEach((a, ai) => {
+          const row = el("div", "choicerow");
+          const input = textInput(a, (v) => { accept[ai] = v; });
+          input.placeholder = ai === 0 ? "Accepted answer" : "Also accept";
+          row.appendChild(input);
+          if (accept.length > 1) {
+            const rm = el("button", "small", "Remove");
+            rm.onclick = () => { accept.splice(ai, 1); touch(); renderQuestions(); };
+            row.appendChild(rm);
+          }
+          block.appendChild(row);
+        });
+        const add = el("button", "small", "Accept another spelling");
+        add.onclick = () => { accept.push(""); touch(); renderQuestions(); };
+        block.appendChild(add);
+        wrap.appendChild(block);
+      });
+      card.appendChild(field("Answers for each blank", wrap, "Case, accents and light typos are already forgiven"));
+      card.appendChild(checkbox("Forgive typos", q.fuzzy !== false, (v) => { q.fuzzy = v; }));
+      break;
+    }
+    case "match": {
+      const wrap = el("div", "choices");
+      q.pairs.forEach((p, pi) => {
+        const row = el("div", "choicerow");
+        const left = textInput(p.left, (v) => { p.left = v; });
+        left.placeholder = `Item ${pi + 1}`;
+        const right = textInput(p.right, (v) => { p.right = v; });
+        right.placeholder = "Its match";
+        row.append(left, el("span", "muted", "\u2192"), right);
+        if (q.pairs.length > 2) {
+          const rm = el("button", "small", "Remove");
+          rm.onclick = () => { q.pairs.splice(pi, 1); touch(); renderQuestions(); };
+          row.appendChild(rm);
+        }
+        wrap.appendChild(row);
+      });
+      if (q.pairs.length < 6) {
+        const add = el("button", "small", "+ Add another pair");
+        add.onclick = () => { q.pairs.push({ left: "", right: "" }); touch(); renderQuestions(); };
+        wrap.appendChild(add);
+      } else {
+        wrap.appendChild(el("p", "hint-inline", "Six pairs is the most a question can have."));
+      }
+      card.appendChild(field("Pairs", wrap, "Players see the right-hand column shuffled"));
+      break;
+    }
+    case "hotspot": {
+      const imgInput = textInput(q.image || "", (v) => { q.image = v; });
+      imgInput.onchange = () => renderQuestions(); // redraw the picker with the new picture
+      card.appendChild(field("Picture", imgInput, "A file in quizzes/images/, or a full http address"));
+      card.appendChild(hotspotPicker(q));
+      break;
+    }
+    case "longtext":
+      card.appendChild(field("Most characters allowed", numInput(q.maxLength ?? 500, 20, 2000, (v) => { q.maxLength = v; })));
+      break;
+    case "file": {
+      const sel = document.createElement("select");
+      for (const [v, label] of [["any", "A photo or a PDF"], ["image", "Photos only"]]) {
+        const o = document.createElement("option");
+        o.value = v; o.textContent = label;
+        sel.appendChild(o);
+      }
+      sel.value = q.accept === "image" ? "image" : "any";
+      sel.onchange = () => { q.accept = sel.value; touch(); };
+      card.appendChild(field("What players may hand in", sel, "Phones offer the camera for photos. Files are kept with the report, up to 10 MB each."));
+      break;
+    }
     case "wordcloud":
       card.appendChild(field("Words each player may enter", numInput(q.maxWords ?? 1, 1, 5, (v) => { q.maxWords = v; })));
       break;
     case "slide":
       break;
   }
+}
+
+/**
+ * A clip to play on the host screen: a YouTube link, or a video or audio file.
+ * The field shows what it understood, so a mistyped file name is obvious.
+ */
+function mediaField(q) {
+  const raw = typeof q.media === "string" ? q.media : "";
+  const input = textInput(raw, (v) => { q.media = v; describe(v); });
+  input.placeholder = "https://youtu.be/… or clip.mp4";
+  const wrap = field("Video or audio (optional)", input, "\u00a0"); // a hint element to write into
+  const hint = wrap.querySelector(".fieldhint");
+  const describe = (v) => {
+    v = String(v || "").trim();
+    if (!v) { hint.textContent = "A YouTube link, a direct video or audio address, or a file in quizzes/media/. It plays on the host screen."; return; }
+    if (/youtu\.?be/.test(v)) hint.textContent = "A YouTube video. It starts when the question opens; add &t=90 to start at 1:30.";
+    else if (/\.(mp3|m4a|ogg|oga|wav|aac|flac)(\?|#|$)/i.test(v)) hint.textContent = "An audio clip, played on the host screen.";
+    else if (/\.(mp4|webm|m4v|mov|ogv)(\?|#|$)/i.test(v)) hint.textContent = "A video file, played on the host screen.";
+    else hint.textContent = "Not recognised: use a YouTube link or a file ending in .mp4, .webm, .mp3, .wav or similar.";
+  };
+  describe(raw);
+  return wrap;
+}
+
+/** The image a quiz names, as a URL the editor can show. Mirrors normalizeQuestion(). */
+function imageUrl(name) {
+  const img = String(name || "").trim();
+  if (!img) return "";
+  return /^https?:\/\//.test(img) ? img : `quiz-images/${encodeURIComponent(img.replace(/^.*[\\/]/, ""))}`;
+}
+
+/**
+ * Drag a box over the picture to mark where the right answer is. The box is
+ * stored as fractions of the picture, so it lands in the same place on every
+ * screen size. The number fields beside it are for nudging.
+ */
+function hotspotPicker(q) {
+  const wrap = el("div", "field");
+  wrap.appendChild(el("span", "fieldlabel", "Where is the right spot? Drag a box over it"));
+  const src = imageUrl(q.image);
+  if (!src) {
+    wrap.appendChild(el("p", "hint-inline", "Name a picture above and it will appear here."));
+    return wrap;
+  }
+  if (!q.target || typeof q.target !== "object") q.target = { x: 0.35, y: 0.35, w: 0.3, h: 0.3 };
+  const box = el("div", "hotpick");
+  const img = document.createElement("img");
+  img.src = src;
+  img.alt = "";
+  img.draggable = false;
+  img.onerror = () => { box.replaceWith(el("p", "hint-inline bad", `Could not load "${q.image}". Check the file name.`)); };
+  const rect = el("div", "hottarget");
+  box.append(img, rect);
+
+  const draw = () => {
+    const t = q.target;
+    Object.assign(rect.style, { left: `${t.x * 100}%`, top: `${t.y * 100}%`, width: `${t.w * 100}%`, height: `${t.h * 100}%` });
+  };
+  const at = (e) => {
+    const r = img.getBoundingClientRect();
+    return { x: Math.min(Math.max((e.clientX - r.left) / r.width, 0), 1), y: Math.min(Math.max((e.clientY - r.top) / r.height, 0), 1) };
+  };
+  let start = null;
+  box.onpointerdown = (e) => { e.preventDefault(); start = at(e); box.setPointerCapture(e.pointerId); };
+  box.onpointermove = (e) => {
+    if (!start) return;
+    const cur = at(e);
+    q.target = { x: Math.min(start.x, cur.x), y: Math.min(start.y, cur.y), w: Math.abs(cur.x - start.x), h: Math.abs(cur.y - start.y) };
+    draw();
+  };
+  box.onpointerup = (e) => {
+    if (!start) return;
+    const cur = at(e);
+    start = null;
+    // a plain tap rather than a drag: drop a box a tenth of the picture wide on it
+    if (Math.abs(cur.x - q.target.x) < 0.01 && q.target.w < 0.02) {
+      q.target = { x: Math.max(cur.x - 0.05, 0), y: Math.max(cur.y - 0.05, 0), w: 0.1, h: 0.1 };
+    }
+    round();
+    draw();
+    syncNumbers();
+    touch();
+  };
+  draw();
+  wrap.appendChild(box);
+
+  const round = () => { for (const k of ["x", "y", "w", "h"]) q.target[k] = Math.round(q.target[k] * 1000) / 1000; };
+  const grid = el("div", "fieldgrid tight");
+  const nums = {};
+  for (const [k, label] of [["x", "Left %"], ["y", "Top %"], ["w", "Width %"], ["h", "Height %"]]) {
+    nums[k] = numInput(Math.round(q.target[k] * 100), 0, 100, (v) => {
+      q.target[k] = Math.min(Math.max(Number(v) || 0, 0), 100) / 100;
+      draw();
+    });
+    grid.appendChild(field(label, nums[k]));
+  }
+  const syncNumbers = () => { for (const k in nums) nums[k].value = String(Math.round(q.target[k] * 100)); };
+  wrap.appendChild(grid);
+  return wrap;
 }
 
 // ---------- small form helpers ----------
@@ -745,6 +965,39 @@ function openImport() {
 }
 $("importBtn").onclick = openImport;
 $("importInlineBtn").onclick = openImport;
+
+/**
+ * A spreadsheet dropped into the import dialog. .xlsx is unzipped and read in
+ * the browser; .csv goes through the same column mapping as pasted CSV.
+ */
+$("importFile").onchange = async () => {
+  const f = $("importFile").files && $("importFile").files[0];
+  if (!f) return;
+  $("importPreview").textContent = `Reading ${f.name}…`;
+  try {
+    let rows;
+    if (/\.xlsx$/i.test(f.name)) {
+      const bytes = new Uint8Array(await f.arrayBuffer());
+      const inflate = async (raw) => {
+        const stream = new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+      };
+      rows = await TQImport.parseXlsx(bytes, inflate);
+    } else {
+      rows = csvRows(await f.text());
+    }
+    const parsed = TQImport.rowsToQuestions(rows);
+    if (!parsed.length) { $("importPreview").textContent = "No questions recognised in that file. It needs a header row with the question and answer columns."; return; }
+    if (quiz.questions.length === 1 && !quiz.questions[0].text) quiz.questions = [];
+    quiz.questions.push(...parsed);
+    $("importModal").hidden = true;
+    $("importFile").value = "";
+    touch();
+    renderQuestions();
+  } catch (e) {
+    $("importPreview").textContent = `Could not read that file: ${e.message}`;
+  }
+};
 $("cancelImport").onclick = () => { $("importModal").hidden = true; };
 
 function previewImport() {
@@ -892,7 +1145,7 @@ function showPreview(q, i) {
   body.appendChild(el("div", "preview-q", text || "(no question text yet)"));
   if (!text) body.querySelector(".preview-q").classList.add("muted");
 
-  if (q.image) body.appendChild(el("div", "preview-img", `[image: ${q.image}]`));
+  if (q.image && q.type !== "hotspot") body.appendChild(el("div", "preview-img", `[image: ${q.image}]`));
 
   const answers = el("div", "preview-answers");
   const labelled = (list) => list.forEach((c, ci) => {
@@ -916,6 +1169,51 @@ function showPreview(q, i) {
       break;
     case "text":
       answers.appendChild(el("div", "preview-input", "Players type their answer here"));
+      break;
+    case "numeric":
+      answers.appendChild(el("div", "preview-input", `Players type a number${q.unit ? ` in ${q.unit}` : ""}`));
+      break;
+    case "blank": {
+      const parts = (q.text || "").split(/_{3,}/);
+      const p = el("div", "preview-blank");
+      parts.forEach((part, pi) => {
+        p.appendChild(document.createTextNode(part));
+        if (pi < parts.length - 1) p.appendChild(el("span", "preview-gap", "\u00a0"));
+      });
+      body.querySelector(".preview-q").replaceWith(p);
+      if (parts.length < 2) answers.appendChild(el("p", "hint-inline", "No ___ in the question yet, so there is nothing to fill in."));
+      break;
+    }
+    case "match": {
+      const cols = el("div", "preview-cols");
+      const l = el("div"), r = el("div");
+      (q.pairs || []).forEach((p) => { l.appendChild(el("div", "preview-item", p.left || "(empty)")); r.appendChild(el("div", "preview-item", p.right || "(empty)")); });
+      cols.append(l, r);
+      answers.appendChild(cols);
+      answers.appendChild(el("p", "hint-inline", "The right-hand column is shuffled. Players tap an item, then its match."));
+      break;
+    }
+    case "hotspot":
+      if (q.image) {
+        const box = el("div", "hotpick preview");
+        const img = document.createElement("img");
+        img.src = imageUrl(q.image);
+        img.alt = "";
+        box.appendChild(img);
+        if (q.target) {
+          const t = el("div", "hottarget");
+          Object.assign(t.style, { left: `${q.target.x * 100}%`, top: `${q.target.y * 100}%`, width: `${q.target.w * 100}%`, height: `${q.target.h * 100}%` });
+          box.appendChild(t);
+        }
+        answers.appendChild(box);
+      }
+      answers.appendChild(el("p", "hint-inline", "Players tap the picture. Only you see the green box."));
+      break;
+    case "longtext":
+      answers.appendChild(el("div", "preview-input", `Players write up to ${q.maxLength ?? 500} characters`));
+      break;
+    case "file":
+      answers.appendChild(el("div", "preview-input", q.accept === "image" ? "Players take or choose a photo" : "Players hand in a photo or a PDF"));
       break;
     case "slider":
       answers.appendChild(el("div", "preview-input", `A slider from ${q.min ?? 0} to ${q.max ?? 100}${q.unit ? ` ${q.unit}` : ""}`));

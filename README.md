@@ -32,6 +32,8 @@ compile and no database to install.
 
 [docs/teaching-with-tigerquiz.md](docs/teaching-with-tigerquiz.md) walks through
 one lesson from start to finish, with screenshots.
+[docs/user-stories.md](docs/user-stories.md) says what the app is for, as
+stories with acceptance criteria, and which of them are still open.
 
 - Host screen: `http://<your-ip>:3000/host.html`
 - Players: `http://<your-ip>:3000/` and enter the PIN (or `/?pin=123456`)
@@ -127,6 +129,9 @@ location ^~ /quiz/ {
     # a game holds one websocket open for the whole lesson
     proxy_read_timeout 3600s;
     proxy_buffering off;
+
+    # photos handed in for a file question
+    client_max_body_size 12m;
 }
 ```
 
@@ -143,8 +148,14 @@ needs, so the proxy can ask for a password on the second group:
 | Public | Teacher only |
 | --- | --- |
 | `/`, `style.css`, `sound.js` | `host.html`, `edit.html`, `reports.html` |
-| `socket.io/`, `/quiz-images/` | everything under `/api/` |
-| `/api/nickname` | |
+| `socket.io/`, `/quiz-images/`, `/quiz-media/` | everything under `/api/` |
+| `/api/nickname`, `/uploads/` | |
+
+`/uploads/` is where phones send files for a "hand in a file" question. It is
+public like the join page: the token in the path is what identifies the
+student, and they were given it when they joined. Files are limited to 10 MB
+(`TIGERQUIZ_UPLOAD_MAX_MB`), so a proxy needs to allow a body that size, which
+for nginx means `client_max_body_size 12m;` in the location block below.
 
 Protect the whole of `/api/` and carve `/api/nickname` back out, rather than
 listing the endpoints to protect. That way an endpoint added later is covered
@@ -283,13 +294,16 @@ Quiz-level fields:
 | `phoneText` | Mirror the question and choices onto phones, on by default. Set `false` for the classic projector-only look |
 
 Every question takes `text`, an optional `time` in seconds, and an optional `image`
-naming a file in `quizzes/images/` or an `http(s)` URL. Two more are worth setting
-on anything you actually teach with:
+naming a file in `quizzes/images/` or an `http(s)` URL. A few more apply to any
+question:
 
 | Field | Meaning |
 | --- | --- |
 | `explanation` | Shown to everyone once the answer is revealed, and kept in the report. This is what turns a wrong answer into something learned, so `npm run check` warns when it is missing |
 | `discuss` | Marks a question as worth a peer-instruction round, highlighting the re-vote button on the host screen |
+| `media` | A clip to play on the host screen when the question opens: a YouTube link (`&t=90` starts it at 1:30), a direct video or audio URL, or a file in `quizzes/media/`. Phones are told to watch or listen, and do not play it themselves |
+| `weight` | What a right answer is worth: `2` for double points, `0.5` for half, `0` for graded but unpaid. Default `1` |
+| `anonymous` | Record the answers without names. Only honoured on polls, word clouds, written answers and files, since a scored answer has to belong to somebody |
 
 The rest depends on `type`.
 
@@ -301,13 +315,25 @@ The rest depends on `type`.
 | `truefalse` | `answer` as `true` or `false` | Right or wrong |
 | `multi` | `choices`, `answers` array of indexes | Partial credit, wrong picks cancel right ones |
 | `slider` | `min`, `max`, `step`, `answer`, `tolerance`, `unit` | Full marks inside the tolerance, tapering to zero |
+| `numeric` | `answer`, `tolerance`, `unit` | Players type a number; right within the tolerance, else wrong |
 | `text` | `accept` array of allowed answers, `fuzzy` | Right or wrong, ignoring case, accents and light typos |
+| `blank` | `___` in the text for each gap, `blanks` array of accepted-answer lists, `fuzzy` | Partial credit per gap filled correctly |
 | `order` | `items` in the correct order | Partial credit per item placed correctly |
+| `match` | `pairs` of `{ "left", "right" }` (2-6), right column shown shuffled | Partial credit per pair matched correctly |
+| `hotspot` | `image`, `target` as `{ "x", "y", "w", "h" }` fractions of the picture | Right if the tap lands inside the target |
+| `longtext` | `maxLength` up to 2000 | Unscored until marked by hand from the report; answers listed on the host screen |
+| `file` | `accept` as `"any"` or `"image"` | Players hand in a photo or PDF from the phone. Unscored until marked by hand from the report |
 | `poll` | `choices` | Unscored, results shown as a bar chart |
 | `wordcloud` | `maxWords` up to 5 | Unscored, results shown as a word cloud |
 | `slide` | none | Nothing to answer, the host advances past it |
 
-`quizzes/all-types.json` demonstrates all nine.
+`quizzes/all-types.json` demonstrates all fifteen. The editor draws the hotspot
+target for you: drag a box over the picture.
+
+The editor also imports spreadsheets: Kahoot's download template, a Wayground
+(Quizizz) export, or any `.xlsx` or `.csv` with a header row naming the
+question, answer and correct-answer columns. Multiple choice, multiple answer,
+true or false and polls come through; the other types are typed in.
 
 Quizzes are validated when a game is created. A bad answer index or a malformed
 question is reported on the host screen instead of failing mid-game.
@@ -347,6 +373,25 @@ Players see their streak, their rank movement, and the gap to the player just ah
 The host screen has the controls. Space or Enter advances, the left and right
 arrow keys move between questions, and `P` pauses.
 
+- **Lecture mode** is a checkbox on the setup screen. Answers are still graded,
+  shown on the projector and saved to the report, but nobody earns points,
+  there is no leaderboard between questions and no podium at the end. It is
+  the setting for polling a lecture rather than running a game.
+- **Quick question** opens a game with no quiz file. Once students have joined,
+  "Ask a question" composes one on the spot: multiple choice with lettered
+  buttons, true or false, a typed answer or number, a word cloud, or a written
+  answer. Leave the correct answer blank for a poll. Ask as many as you like,
+  then press Finish; the report records every question you asked.
+- **Joining late is allowed.** Somebody who enters the PIN after the start
+  joins on zero points and plays from the next question. The join screen tells
+  them the game is already under way. A player the host removes cannot come
+  back in.
+- **Teams** are a dropdown on the setup screen. Players are shared out across
+  the teams as they join, the lobby colours them, and the leaderboard and
+  podium rank teams by the average score of their members, so a bigger team
+  is not a better one. Each phone also shows its own team's standing. The
+  report records who was on which team.
+
 - **Pause** stops the clock for everyone and refuses answers until you resume.
   Paused time is not counted against anyone's response speed.
 - **Back** replays the previous question, or on a results screen re-asks the one
@@ -359,6 +404,27 @@ If the host's browser disconnects, the game is paused and held open for three
 minutes rather than destroyed, and players are told the host is away. Reopening
 the host page rejoins the same game automatically and puts the screen back where
 it was. Set `HOST_GRACE_MS` to change how long a game waits.
+
+## Homework
+
+"Set as homework" on the host screen leaves a quiz open under a six-digit
+code, with an optional closing time. Students enter the code on the ordinary
+join page whenever they like and work through the questions at their own
+pace, one at a time, with the answer and explanation after each. There is no
+clock to race, though a faster answer still scores more when points are on.
+Lecture mode applies here too.
+
+A closed tab or a flat battery costs nothing: entering the code again picks
+up at the next unanswered question. Students are recognised by their class
+list entry, or by the identifier the quiz asks for, so use one or the other
+for anything that will be graded. Without either, the nickname is all there
+is to go on.
+
+The host screen lists open homework with how many have started and finished,
+a link to its report, and a Close button. The report is the same one a live
+game produces and fills in as students finish; the gradebook export includes
+it. The quiz is copied when the homework is created, so editing the file
+afterwards does not change the questions anyone is answering.
 
 ## Checking quizzes
 
@@ -425,6 +491,21 @@ for grading or a spreadsheet.
 
 Games the host abandons before the final standings are discarded rather than saved.
 Set `TIGERQUIZ_DATA` to store the database somewhere else.
+
+**Marking by hand.** Written answers and handed-in files are listed on the
+report with Right, Partial and Wrong buttons. A mark earns the points a right
+answer would, scaled by the question's weight, and the scores, ranks, correct
+rates and gradebook follow. Clicking the current mark takes it back. Anonymous
+answers cannot be marked, since there is nobody to credit.
+
+Files students hand in live under `data/uploads/`, beside the database, so the
+backup job covers them. They are deleted with the report.
+
+The **Students** tab follows each person across every game, and its two
+"Download gradebook" buttons give a spreadsheet with one row per student and
+one column per game: either the percentage of scored questions they got
+right, which is usually what a grade is, or their points. A game they did not
+play is left blank, so absence is not mistaken for a zero.
 
 ## Guessing a PIN
 
