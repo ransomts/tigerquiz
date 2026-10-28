@@ -66,6 +66,31 @@
       "explanation": "Au, from the Latin aurum. Ag is silver, which is a common mix-up."
     },
     {
+      "type": "numeric",
+      "text": "What is 17 × 23?",
+      "answer": 391,
+      "tolerance": 0,
+      "time": 30,
+      "explanation": "17 × 23 = 391. A quick route: 17 × 20 = 340, plus 17 × 3 = 51.",
+      "weight": 2
+    },
+    {
+      "type": "blank",
+      "text": "Water boils at ___ degrees Celsius at sea level, and freezes at ___.",
+      "blanks": [
+        [
+          "100",
+          "one hundred"
+        ],
+        [
+          "0",
+          "zero"
+        ]
+      ],
+      "time": 25,
+      "explanation": "At standard pressure water boils at 100 °C and freezes at 0 °C, which is how the scale was defined."
+    },
+    {
       "type": "order",
       "text": "Put these events in chronological order.",
       "items": [
@@ -76,6 +101,50 @@
       ],
       "time": 40,
       "explanation": "1969, 1989, 2007, 2020."
+    },
+    {
+      "type": "match",
+      "text": "Match each country to its capital.",
+      "pairs": [
+        {
+          "left": "France",
+          "right": "Paris"
+        },
+        {
+          "left": "Japan",
+          "right": "Tokyo"
+        },
+        {
+          "left": "Kenya",
+          "right": "Nairobi"
+        },
+        {
+          "left": "Peru",
+          "right": "Lima"
+        }
+      ],
+      "time": 40,
+      "explanation": "Paris, Tokyo, Nairobi and Lima."
+    },
+    {
+      "type": "hotspot",
+      "text": "Tap the centre of the circle.",
+      "image": "shape.svg",
+      "target": {
+        "x": 0.35,
+        "y": 0.35,
+        "w": 0.3,
+        "h": 0.3
+      },
+      "time": 20,
+      "explanation": "The circle is centred in the picture, so the middle of the square is the middle of the circle."
+    },
+    {
+      "type": "longtext",
+      "text": "In a sentence or two, why does ice float on water?",
+      "maxLength": 400,
+      "time": 90,
+      "explanation": "Ice is less dense than liquid water: the hydrogen bonds hold the molecules in an open lattice that takes up more room."
     },
     {
       "type": "poll",
@@ -92,7 +161,29 @@
       "type": "wordcloud",
       "text": "In one word, what stood out from today's lesson?",
       "maxWords": 2,
-      "time": 25
+      "time": 25,
+      "anonymous": true
+    },
+    {
+      "type": "file",
+      "text": "Photograph your working for the last calculation.",
+      "accept": "any",
+      "time": 180,
+      "explanation": "Any clear photo or PDF of the page. The host marks these from the report afterwards."
+    },
+    {
+      "type": "choice",
+      "text": "What is this sound?",
+      "media": "tone.wav",
+      "choices": [
+        "A pure tone",
+        "Birdsong",
+        "Rain",
+        "Traffic"
+      ],
+      "answer": 0,
+      "time": 15,
+      "explanation": "A single sine wave at 440 Hz, the A that orchestras tune to."
     }
   ]
 }

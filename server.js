@@ -22,7 +22,8 @@ import { attachUser } from "./lib/auth.js";
 import { apiRouter } from "./lib/routes.js";
 import { attachSockets } from "./lib/sockets.js";
 import { closeAllRooms } from "./lib/registry.js";
-import { PORT, HOST, PUBLIC_DIR, IMAGE_DIR, DATA_DIR, BLOCKED_WORDS } from "./lib/config.js";
+import * as uploads from "./lib/uploads.js";
+import { PORT, HOST, PUBLIC_DIR, IMAGE_DIR, MEDIA_DIR, DATA_DIR, BLOCKED_WORDS, UPLOAD_MAX_BYTES } from "./lib/config.js";
 
 store.open(DATA_DIR);
 // optional extra blocked nicknames, one per line
@@ -35,6 +36,18 @@ const io = new Server(http);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(PUBLIC_DIR));
 app.use("/quiz-images", express.static(IMAGE_DIR));
+app.use("/quiz-media", express.static(MEDIA_DIR));
+// Students send files here for a "file" question. It is public, like the join
+// screen: the token in the path is what says who is uploading, and the player
+// got it when they joined. A proxy must leave /uploads/ open (see the README).
+app.post("/uploads/:token", express.raw({ type: () => true, limit: UPLOAD_MAX_BYTES }), async (req, res) => {
+  try {
+    const name = decodeURIComponent(String(req.get("x-file-name") || ""));
+    res.json({ ok: true, ...(await uploads.save(req.params.token, req.body, req.get("content-type"), name)) });
+  } catch (e) {
+    res.status(e.type === "entity.too.large" ? 413 : 400).json({ error: e.type === "entity.too.large" ? "That file is too big" : e.message });
+  }
+});
 // Identity first: the API needs req.user, and /api/me answers for the pages.
 app.use(attachUser);
 app.use("/api", apiRouter());

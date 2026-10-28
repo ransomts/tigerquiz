@@ -53,7 +53,9 @@
 
     # ---- who needs a session --------------------------------------------
     # Students never sign in: they join by PIN, so the join page, the
-    # websocket and the images stay open. <Location> blocks merge shortest
+    # websocket, the images and media, and /uploads/ (where phones send files
+    # for a file question, under a per-player token) stay open. <Location>
+    # blocks merge shortest
     # path first, which is what lets the one public API endpoint sit inside
     # the protected tree.
     <Location />

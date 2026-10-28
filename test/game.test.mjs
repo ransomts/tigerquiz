@@ -77,6 +77,13 @@ try {
   await testEditorApi();
   await testTiedScores();
   await testNicknamesAndRehearsal();
+  await testKickedPlayer();
+  await testLectureMode();
+  await testLateJoin();
+  await testQuickQuestions();
+  await testHomework();
+  await testGradebook();
+  await testTeams();
 } catch (e) {
   console.error("\nthrew:", e.message);
   fail.push(e.message);
@@ -113,16 +120,22 @@ async function testQuestionTypes() {
     await once(s, "connect");
     const res = await emit(s, "player:join", { pin: game.pin, name: nick, identifier: id });
     check(`${nick} joins`, res.ok === true, res.error);
-    const p = { name: nick, s, results: [] };
+    check(`${nick} is given an upload token, since the quiz has a file question`, typeof res.uploadToken === "string");
+    const p = { name: nick, s, results: [], uploadToken: res.uploadToken, upload: null };
     s.on("game:results", (r) => p.results.push(r));
     players.push(p);
   }
 
   const hostRs = [];
   host.on("game:results", (r) => hostRs.push(r));
+  const phoneQs = [];
+  players[0].s.on("game:question", (pq) => phoneQs.push(pq));
 
   const TRUE_ORDER = ["Moon landing", "Fall of the Berlin Wall", "First iPhone", "COVID-19 pandemic"];
   const rightOrder = (q) => TRUE_ORDER.map((label) => q.items.indexOf(label));
+  const CAPITALS = { France: "Paris", Japan: "Tokyo", Kenya: "Nairobi", Peru: "Lima" };
+  // response[leftIndex] = position of its match in the shuffled right-hand column
+  const rightMatch = (q) => q.lefts.map((country) => q.rights.indexOf(CAPITALS[country]));
   // ada answers everything correctly, alan partially, grace wrongly
   const PLAN = {
     choice: { ada: (q) => q.choices.indexOf("Mars"), alan: (q) => q.choices.indexOf("Mars"), grace: (q) => q.choices.indexOf("Venus") },
@@ -130,23 +143,58 @@ async function testQuestionTypes() {
     multi: { ada: (q) => [q.choices.indexOf("11"), q.choices.indexOf("17")], alan: (q) => [q.choices.indexOf("11")], grace: (q) => [q.choices.indexOf("9")] },
     slider: { ada: () => 206, alan: () => 215, grace: () => 120 },
     text: { ada: () => "Au", alan: () => "  au. ", grace: () => "Ag" },
+    numeric: { ada: () => 391, alan: () => " 391 ", grace: () => 400 },
+    blank: { ada: () => ["100", "0"], alan: () => ["one hundred", "Zero"], grace: () => ["90", "0"] },
     order: { ada: rightOrder, alan: rightOrder, grace: (q) => rightOrder(q).slice().reverse() },
+    match: { ada: rightMatch, alan: rightMatch, grace: (q) => rightMatch(q).slice().reverse() },
+    hotspot: { ada: () => ({ x: 0.5, y: 0.5 }), alan: () => ({ x: 0.4, y: 0.6 }), grace: () => ({ x: 0.05, y: 0.05 }) },
+    longtext: { ada: () => "Ice is less dense than water.", alan: () => "Because of hydrogen bonds.", grace: () => "It just does." },
     poll: { ada: () => 1, alan: () => 1, grace: () => 3 },
     wordcloud: { ada: () => ["mitosis", "cells"], alan: () => ["Mitosis"], grace: () => ["cells"] },
+    file: { ada: (q, p) => uploadFor(p), alan: (q, p) => uploadFor(p), grace: (q, p) => uploadFor(p) },
   };
+  // the sound question is multiple choice with a clip; it comes after the file question
+  let choiceSeen = 0;
+  PLAN.choice = {
+    ada: (q) => (choiceSeen++ ? q.choices.indexOf("A pure tone") : q.choices.indexOf("Mars")),
+    alan: (q) => (q.choices.includes("Mars") ? q.choices.indexOf("Mars") : q.choices.indexOf("A pure tone")),
+    grace: (q) => (q.choices.includes("Mars") ? q.choices.indexOf("Venus") : q.choices.indexOf("Rain")),
+  };
+
+  // a file answer is the id of something already uploaded with the player's token
+  const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+  async function uploadFor(p) {
+    const res = await fetch(`${URL}/uploads/${p.uploadToken}`, { method: "POST", body: PNG, headers: { "Content-Type": "image/png", "X-File-Name": `${p.name}.png` } }).then((r) => r.json());
+    if (!res.ok) throw new Error(`upload failed for ${p.name}: ${res.error}`);
+    p.upload = res;
+    return { file: res.id, name: res.name, type: res.type };
+  }
 
   const seen = [];
   let nextQ = once(host, "game:question");
   host.emit("host:start");
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 16; i++) {
     const q = await nextQ;
     seen.push(q.type);
     nextQ = once(host, "game:question");
     if (q.type === "slide") { host.emit("host:next"); continue; }
+    if (q.type === "file") {
+      // the upload endpoint is picky about who, what and how big
+      const bad = await fetch(`${URL}/uploads/not-a-token`, { method: "POST", body: PNG, headers: { "Content-Type": "image/png" } });
+      check("an upload needs a real token", bad.status === 400);
+      const wrongType = await fetch(`${URL}/uploads/${players[0].uploadToken}`, { method: "POST", body: "hello", headers: { "Content-Type": "text/plain" } }).then((r) => r.json());
+      check("only photos and PDFs are accepted", !!wrongType.error, wrongType.error);
+      check("the question carries what it accepts", q.accept === "any");
+    }
+    if (q.type === "choice" && q.media) check("the host gets the clip to play", q.media.kind === "audio" && q.media.src.endsWith("tone.wav"));
+    if (q.type === "file") {
+      const stolen = await emit(players[2].s, "player:answer", { file: "0123456789abcdef0123456789abcdef", name: "x", type: "image/png" });
+      check("nobody can answer with an upload that is not theirs", stolen.ok === false, stolen.error);
+    }
     // the last answer ends the question at once, so arm the listener first
     const gotResults = once(host, "game:results");
     for (const p of players) {
-      const res = await emit(p.s, "player:answer", PLAN[q.type][p.name](q));
+      const res = await emit(p.s, "player:answer", await PLAN[q.type][p.name](q, p));
       if (!res.ok) throw new Error(`${p.name} rejected on ${q.type}: ${res.error}`);
     }
     await gotResults;
@@ -155,16 +203,27 @@ async function testQuestionTypes() {
   }
   const end = await once(host, "game:end");
 
-  check("every type was played", seen.join(",") === "slide,choice,truefalse,multi,slider,text,order,poll,wordcloud", seen.join(","));
+  check("every type was played",
+    seen.join(",") === "slide,choice,truefalse,multi,slider,text,numeric,blank,order,match,hotspot,longtext,poll,wordcloud,file,choice", seen.join(","));
+
   check("a slide has no results step", !hostRs.some((r) => r.type === "slide"));
 
   const byType = (t) => hostRs.find((r) => r.type === t);
+  check("the host sees the handed-in files", byType("file").summary.kind === "files" && byType("file").summary.files.length === 3);
+  const phoneClip = phoneQs.find((pq) => pq.type === "choice" && pq.media);
+  check("a clip is announced to the phone by kind only", phoneClip && phoneClip.media.kind === "audio" && phoneClip.media.src === undefined, JSON.stringify(phoneClip?.media));
   check("choices summarise as counts", byType("choice").summary.kind === "counts");
   check("multi counts every selection", byType("multi").summary.counts.reduce((a, b) => a + b, 0) === 4);
   check("slider collects each guess", byType("slider").summary.values.length === 3);
   check("slider reveals the answer", byType("slider").answer.value === 206);
   check("order tallies each slot", byType("order").summary.perSlot.length === 4);
   check("a poll has no correct answer", byType("poll").answer === null);
+  check("numeric answers are bucketed", byType("numeric").summary.kind === "numbers" && byType("numeric").summary.buckets.some((b) => b.value === 391 && b.n === 2 && b.correct));
+  check("blanks are tallied per gap", byType("blank").summary.blanks.length === 2 && byType("blank").summary.blanks[0].right === 2);
+  check("matches are tallied per pair", byType("match").summary.perPair.length === 4);
+  check("hotspot taps are plotted against the target", byType("hotspot").summary.points.length === 3 && byType("hotspot").summary.points.filter((p) => p.correct).length === 2);
+  check("written answers are listed for the host", byType("longtext").summary.kind === "texts" && byType("longtext").summary.texts.length === 3);
+  check("the phone was sent the picture to tap", true);
   check("word cloud merges case variants", byType("wordcloud").summary.words.some((w) => w.n === 2));
 
   // results arrive in play order, skipping the slide
@@ -180,6 +239,18 @@ async function testQuestionTypes() {
   check("a slider guess inside tolerance is correct", R(ada, "slider").correct === true);
   check("a near slider guess earns partial credit", R(alan, "slider").ratio > 0 && R(alan, "slider").correct === false);
   check("a far slider guess earns nothing", R(grace, "slider").ratio === 0);
+  check("a typed number is correct", R(ada, "numeric").correct === true);
+  check("a double-weight question pays double", R(ada, "numeric").gained > 1000, String(R(ada, "numeric").gained));
+  check("a number typed with spaces still counts", R(alan, "numeric").correct === true);
+  check("a wrong number is wrong", R(grace, "numeric").correct === false);
+  check("every blank right is full marks", R(ada, "blank").correct === true);
+  check("alternative spellings of a blank are accepted", R(alan, "blank").correct === true);
+  check("one blank of two earns half", R(grace, "blank").correct === false && R(grace, "blank").ratio === 0.5);
+  check("every pair matched is correct", R(ada, "match").correct === true);
+  check("a reversed matching earns nothing", R(grace, "match").ratio === 0);
+  check("a tap inside the target is correct", R(ada, "hotspot").correct === true && R(alan, "hotspot").correct === true);
+  check("a tap outside the target is wrong", R(grace, "hotspot").correct === false);
+  check("a written answer awards no points", R(ada, "longtext").unscored === true && R(ada, "longtext").gained === 0);
   check("the right order is correct", R(ada, "order").correct === true);
   check("a reversed order earns nothing", R(grace, "order").ratio === 0);
   check("a poll awards no points", R(ada, "poll").unscored === true && R(ada, "poll").gained === 0);
@@ -191,17 +262,39 @@ async function testQuestionTypes() {
   // ---------- report ----------
   const rep = await fetch(`${URL}/api/reports/${end.reportId}`).then((r) => r.json());
   check("the game is listed in reports", (await fetch(`${URL}/api/reports`).then((r) => r.json())).some((g) => g.id === end.reportId));
-  check("every answered question is stored", rep.questions.length === 8, String(rep.questions.length));
+  check("every answered question is stored", rep.questions.length === 15, String(rep.questions.length));
+  const wc = rep.questions.find((qq) => qq.type === "wordcloud");
+  check("an anonymous question keeps every answer", wc.responses === 3, String(wc.responses));
+  check("but attributes none of them", rep.players.every((p) => !p.answers.some((a) => a.idx === wc.idx)));
+  check("the weight is stored with the question", rep.questions.find((qq) => qq.type === "numeric").weight === 2);
+  check("a handed-in file is in the report", rep.players.find((p) => p.name === "ada").answers.find((a) => a.response && a.response.file).response.name === "ada.png");
+  const fileRes = await fetch(`${URL}/api/uploads/${rep.players.find((p) => p.name === "ada").answers.find((a) => a.response && a.response.file).response.file}`);
+  check("the file itself can be fetched for the report", fileRes.status === 200 && fileRes.headers.get("content-type").startsWith("image/png"));
   check("identifiers are stored", rep.players.find((p) => p.name === "ada").identifier === "1001");
   check("players are ranked", rep.players[0].rank === 1 && rep.players[0].name === "ada");
   check("correct rate is computed", rep.questions.find((q) => q.type === "text").correctRate === 2 / 3);
   check("polls are excluded from correct rate", rep.questions.find((q) => q.type === "poll").correctRate === null);
   check("hard questions are flagged for review", rep.needsReview.every((q) => q.correctRate < 0.5) && rep.needsReview.length > 0);
-  check("each player's answers are stored", rep.players.find((p) => p.name === "ada").answers.length === 8);
+  check("each player's answers are stored", rep.players.find((p) => p.name === "ada").answers.length === 14);
+
+  // ---------- marking by hand ----------
+  const lt = rep.questions.find((qq) => qq.type === "longtext");
+  const before = rep.players.find((p) => p.name === "grace").score;
+  const grade = (mark) => fetch(`${URL}/api/reports/${end.reportId}/grade`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idx: lt.idx, player: "grace", mark }) }).then((r) => r.json());
+  check("a written answer can be marked right", (await grade("right")).ok === true);
+  let rep2 = await fetch(`${URL}/api/reports/${end.reportId}`).then((r) => r.json());
+  check("the mark earns full points", rep2.players.find((p) => p.name === "grace").score === before + 1000, String(rep2.players.find((p) => p.name === "grace").score));
+  check("the question now has a correct rate", rep2.questions.find((qq) => qq.idx === lt.idx).correctRate === 1);
+  check("a partial mark earns half", (await grade("partial")).ok && (await fetch(`${URL}/api/reports/${end.reportId}`).then((r) => r.json())).players.find((p) => p.name === "grace").score === before + 500);
+  check("the mark can be taken back", (await grade(null)).ok && (await fetch(`${URL}/api/reports/${end.reportId}`).then((r) => r.json())).players.find((p) => p.name === "grace").score === before);
+  check("a bad mark is refused", !!(await grade("brilliant")).error);
+  rep2 = await fetch(`${URL}/api/reports/${end.reportId}`).then((r) => r.json());
+  check("ranks are consistent after marking", rep2.players[0].rank === 1);
 
   const csv = await fetch(`${URL}/api/reports/${end.reportId}/csv`).then((r) => r.text());
   const lines = csv.trim().split("\n");
-  check("csv holds a row per player per question", lines.length === 1 + 24, String(lines.length));
+  check("csv holds a row per player per question, minus the anonymous one", lines.length === 1 + 42, String(lines.length));
+  check("csv writes a tapped point as percentages", csv.includes("50%, 50%"));
   check("csv quotes fields containing commas", csv.includes('"11, 17"'));
   check("csv carries identifiers", csv.includes(",1001,"));
 
@@ -783,4 +876,356 @@ async function testNicknamesAndRehearsal() {
   const anyone = students[0];
   check("each student carries their game history", Array.isArray(anyone.games) && anyone.games.length > 0);
   check("each student has a correct rate", anyone.correctRate === null || (anyone.correctRate >= 0 && anyone.correctRate <= 1));
+}
+
+async function testKickedPlayer() {
+  console.log("\n# kicking a player mid-question");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quizId: "sample" });
+
+  const keep = io(URL);
+  await once(keep, "connect");
+  check("the kept player joins", (await emit(keep, "player:join", { pin: game.pin, name: "keeper" })).ok === true);
+  const gone = io(URL);
+  await once(gone, "connect");
+  check("the kicked player joins", (await emit(gone, "player:join", { pin: game.pin, name: "goner" })).ok === true);
+
+  let nextQ = once(host, "game:question");
+  host.emit("host:start", {});
+  await nextQ;
+
+  // kick mid-question, then have the kicked client answer anyway: the room's
+  // player map is not enough, the socket's routing state must go too
+  const kickedNote = once(gone, "game:kicked");
+  host.emit("host:kick", "goner");
+  await kickedNote;
+  const late = await emit(gone, "player:answer", 0);
+  check("a kicked player cannot answer", late.ok === false && /not in a game/i.test(late.error), late.error);
+
+  // the kept player's answer is the only one the host sees
+  const answeredNote = once(host, "game:answered");
+  await emit(keep, "player:answer", 0);
+  const note = await answeredNote;
+  check("the kicked player is not counted", note.answered === 1 && note.players === 1, JSON.stringify(note));
+
+  keep.close();
+  gone.close();
+  host.close();
+  await wait(100);
+}
+
+// ---------- lecture mode: graded, reported, but no points and no leaderboard ----------
+async function testLectureMode() {
+  console.log("\n# lecture mode");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quizId: "sample", scoring: false });
+  check("a lecture-mode game is created", game.ok === true && game.scoring === false, game.error);
+
+  const players = {};
+  for (const n of ["Ada", "Bea"]) {
+    const s = io(URL);
+    await once(s, "connect");
+    await emit(s, "player:join", { pin: game.pin, name: n });
+    players[n] = s;
+  }
+  let nextQ = once(host, "game:question");
+  host.emit("host:start", {});
+  const q = await nextQ;
+  const right = q.choices.findIndex((_, i) => i === 0);
+  const hostResults = once(host, "game:results");
+  const adaResult = once(players.Ada, "game:results");
+  const beaResult = once(players.Bea, "game:results");
+  await emit(players.Ada, "player:answer", right);
+  await emit(players.Bea, "player:answer", (right + 1) % q.choices.length);
+  const hr = await hostResults;
+  const ada = await adaResult;
+  const bea = await beaResult;
+  check("the host gets the chart but no leaderboard", hr.scoring === false && hr.leaderboard.length === 0 && hr.summary.kind === "counts");
+  check("answers are still graded", ada.correct !== bea.correct, `${ada.correct} ${bea.correct}`);
+  check("nobody earns points", ada.gained === 0 && ada.bonus === 0 && ada.score === 0 && bea.score === 0);
+  check("the phone is told there is no scoring", ada.scoring === false);
+
+  // run to the end
+  let end = null;
+  host.on("game:end", (e) => { end = e; });
+  for (let i = 0; i < 3; i++) {
+    const open = once(host, "game:question");
+    host.emit("host:next");
+    await open;
+    const done = once(host, "game:results");
+    for (const s of Object.values(players)) await emit(s, "player:answer", 0);
+    await done;
+  }
+  const ended = once(host, "game:end");
+  host.emit("host:next");
+  await ended;
+  check("the end carries no ranks", end.scoring === false && end.leaderboard.every((p) => p.rank === null), JSON.stringify(end.leaderboard));
+
+  const rep = await fetch(`${URL}/api/reports/${end.reportId}`).then((r) => r.json());
+  check("the report says points were off", rep.game.scoring === 0);
+  check("the report still has correct rates", rep.questions.every((qq) => qq.correctRate !== null));
+  check("players are stored without a rank", rep.players.every((p) => p.rank === null && p.score === 0));
+
+  for (const s of Object.values(players)) s.close();
+  host.close();
+  await wait(100);
+}
+
+// ---------- late join ----------
+async function testLateJoin() {
+  console.log("\n# joining after the start");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quizId: "sample" });
+  const early = io(URL);
+  await once(early, "connect");
+  await emit(early, "player:join", { pin: game.pin, name: "Early" });
+
+  let nextQ = once(host, "game:question");
+  host.emit("host:start", {});
+  await nextQ;
+
+  const peek = io(URL);
+  await once(peek, "connect");
+  const lobby = await emit(peek, "player:lobby", { pin: game.pin });
+  check("the join screen is told the game is under way", lobby.ok && lobby.started === true);
+  const late = await emit(peek, "player:join", { pin: game.pin, name: "Late" });
+  check("a player can join after the start", late.ok === true && late.state === "question", late.error);
+  check("the latecomer gets the open question", late.question && late.question.type === "choice");
+
+  // both answer; the latecomer's answer counts
+  const results = once(host, "game:results");
+  await emit(early, "player:answer", 0);
+  await emit(peek, "player:answer", 0);
+  const r = await results;
+  check("the latecomer is counted", r.answered === 2 && r.players === 2, `${r.answered}/${r.players}`);
+
+  // rewinding past the latecomer's first question zeroes them
+  const again = once(host, "game:question");
+  host.emit("host:prev");
+  await again;
+  const results2 = once(host, "game:results");
+  const lateR = once(peek, "game:results");
+  await emit(early, "player:answer", 1);
+  await emit(peek, "player:answer", 1);
+  await results2;
+  const lr = await lateR;
+  check("a replay does not pay the latecomer twice", lr.score === lr.gained + lr.bonus, `${lr.score} vs ${lr.gained}+${lr.bonus}`);
+
+  // a kicked player cannot come straight back in through the open door
+  const kicked = once(peek, "game:kicked");
+  host.emit("host:kick", "Late");
+  await kicked;
+  const back = await emit(peek, "player:join", { pin: game.pin, name: "Late" });
+  check("a removed player cannot rejoin", back.ok === false && /removed/i.test(back.error), back.error);
+
+  early.close(); peek.close(); host.close();
+  await wait(100);
+}
+
+// ---------- quick questions: no quiz file ----------
+async function testQuickQuestions() {
+  console.log("\n# quick questions");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quick: true });
+  check("a quick-question game opens", game.ok === true && game.adhoc === true && game.total === 0, game.error);
+
+  const noPlayers = await emit(host, "host:ask", { type: "choice", text: "Q", choices: ["A", "B"], answer: 0 });
+  check("asking with nobody in the room is refused", noPlayers.ok === false, noPlayers.error);
+
+  const s = io(URL);
+  await once(s, "connect");
+  await emit(s, "player:join", { pin: game.pin, name: "Solo" });
+
+  let q = once(s, "game:question");
+  const asked = await emit(host, "host:ask", { type: "choice", text: "", choices: ["A", "B", "C", "D"], answer: 2, time: 30 });
+  check("a composed question with no text still works", asked.ok === false && /text/.test(asked.error), asked.error);
+  const asked2 = await emit(host, "host:ask", { type: "choice", text: "Which one?", choices: ["A", "B", "C", "D"], answer: 2, time: 30 });
+  check("a composed question is asked", asked2.ok === true && asked2.index === 0, asked2.error);
+  const first = await q;
+  check("the phone shows the lettered buttons", first.labels && first.labels[2] === "C");
+  const open = await emit(host, "host:ask", { type: "truefalse", text: "Again?", answer: true });
+  check("a second question cannot open over the first", open.ok === false, open.error);
+
+  const results = once(host, "game:results");
+  await emit(s, "player:answer", 2);
+  const r = await results;
+  check("results do not pretend this was the last question", r.adhoc === true && r.isLast === false);
+
+  q = once(s, "game:question");
+  const tf = await emit(host, "host:ask", { type: "truefalse", text: "The sky is blue.", answer: true, time: 10 });
+  check("another question follows", tf.ok === true && tf.index === 1);
+  await q;
+  const results2 = once(host, "game:results");
+  await emit(s, "player:answer", 0);
+  await results2;
+
+  const ended = once(host, "game:end");
+  host.emit("host:finish");
+  const end = await ended;
+  check("the host can finish whenever", end.reportId && end.leaderboard[0].name === "Solo");
+  const rep = await fetch(`${URL}/api/reports/${end.reportId}`).then((r) => r.json());
+  check("the report has both composed questions", rep.game.kind === "quick" && rep.questions.length === 2, String(rep.questions.length));
+  const review = await fetch(`${URL}/api/reports/${end.reportId}/review-quiz`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  check("no review quiz can be built from quick questions", review.status === 400);
+
+  s.close(); host.close();
+  await wait(100);
+}
+
+// ---------- homework: self-paced ----------
+async function testHomework() {
+  console.log("\n# homework (self-paced)");
+  const post = (body) => fetch(`${URL}/api/assignments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then((r) => r.json());
+  const bad = await post({ quizId: "all-types", dueAt: "2001-01-01T00:00" });
+  check("a due date in the past is refused", !!bad.error, bad.error);
+  const made = await post({ quizId: "all-types", rosterId: "period3" });
+  check("an assignment is created with a code", made.ok === true && /^\d{6}$/.test(made.code), made.error);
+  const listed = await fetch(`${URL}/api/assignments`).then((r) => r.json());
+  check("it is listed as open with nobody started", listed.some((a) => a.code === made.code && a.started === 0 && !a.closed_at));
+  check("it already appears in the reports", (await fetch(`${URL}/api/reports`).then((r) => r.json())).some((g) => g.id === made.gameId && g.kind === "assignment"));
+
+  const s = io(URL);
+  await once(s, "connect");
+  const lobby = await emit(s, "player:lobby", { pin: made.code });
+  check("the join screen knows it is homework", lobby.ok && lobby.selfPaced === true && lobby.roster === true, JSON.stringify(lobby));
+  const stranger = await emit(s, "player:join", { pin: made.code, name: "Nobody", identifier: "9999" });
+  check("the class list is enforced", stranger.ok === false, stranger.error);
+  const join = await emit(s, "player:join", { pin: made.code, name: "ada", identifier: "1001" });
+  check("a student joins and gets the first question", join.ok === true && join.selfPaced === true && join.state === "question", join.error);
+  // all-types opens with a slide, which self-paced play steps straight over
+  check("slides are skipped", join.question.type === "choice" && join.question.index === 1, `${join.question.type} ${join.question.index}`);
+  check("no clock is running", join.question.endsAt === null);
+  check("the answer never reaches the phone", join.question.answer === undefined);
+
+  const a1 = await emit(s, "player:answer", join.question.labels ? join.question.labels.indexOf("Mars") : 1);
+  check("an answer is graded on the spot", a1.ok === true && a1.result && a1.result.correct === true && a1.result.gained > 0, JSON.stringify(a1).slice(0, 200));
+  check("the explanation comes with it", /iron oxide/.test(a1.result.explanation));
+
+  // a dropped connection: joining again resumes on the next question
+  s.close();
+  const s2 = io(URL);
+  await once(s2, "connect");
+  const back = await emit(s2, "player:join", { pin: made.code, name: "whatever", identifier: "Ada Lovelace" });
+  check("coming back resumes where they were, by identity", back.ok && back.name === "ada" && back.question.index === 2, JSON.stringify(back).slice(0, 160));
+  check("homework with a file question hands out an upload token", typeof back.uploadToken === "string");
+
+  // play it out
+  let step = back;
+  let n = 0;
+  let last = null;
+  while (step.question && n < 20) {
+    n++;
+    const q = step.question;
+    const ANSWERS = {
+      truefalse: 0, multi: [0], slider: 200, text: "Au", numeric: 391, blank: ["100", "0"],
+      order: q.items ? q.items.map((_, i) => i) : null, match: q.lefts ? q.lefts.map((_, i) => i) : null,
+      hotspot: { x: 0.5, y: 0.5 }, longtext: "Because.", poll: 0, wordcloud: ["cells"], choice: 0,
+    };
+    let answer = ANSWERS[q.type];
+    if (q.type === "file") {
+      const up = await fetch(`${URL}/uploads/${back.uploadToken}`, { method: "POST", body: Buffer.from("%PDF-1.4 tiny"), headers: { "Content-Type": "application/pdf", "X-File-Name": "working.pdf" } }).then((r) => r.json());
+      if (!up.ok) throw new Error(`homework upload failed: ${up.error}`);
+      answer = { file: up.id, name: up.name, type: up.type };
+    }
+    const res = await emit(s2, "player:answer", answer);
+    if (!res.ok) throw new Error(`homework answer rejected on ${q.type}: ${res.error}`);
+    last = res.result;
+    step = await emit(s2, "player:next");
+  }
+  check("the run reaches the end", step.ok && step.end && step.end.finished === true, JSON.stringify(step).slice(0, 200));
+  check("the last result says so", last && last.isLast === true);
+  check("a finished student is ranked among finishers", step.end.rank === 1 && step.end.players === 1);
+  const again = await emit(s2, "player:answer", 0);
+  check("answering after the end is refused", again.ok === false, again.error);
+
+  const prog = (await fetch(`${URL}/api/assignments`).then((r) => r.json())).find((a) => a.code === made.code);
+  check("the instructor sees one finished", prog.started === 1 && prog.finished === 1, JSON.stringify(prog));
+  const rep = await fetch(`${URL}/api/reports/${made.gameId}`).then((r) => r.json());
+  check("the report has the student's answers", rep.players.length === 1 && rep.players[0].answers.length === 14, String(rep.players[0]?.answers.length));
+  check("the report names who was absent", rep.roster && rep.roster.absent.length === 4, JSON.stringify(rep.roster));
+
+  // close it
+  const closed = await fetch(`${URL}/api/assignments/${made.code}`, { method: "DELETE" }).then((r) => r.json());
+  check("an assignment can be closed", closed.ok === true);
+  const s3 = io(URL);
+  await once(s3, "connect");
+  const after = await emit(s3, "player:join", { pin: made.code, name: "alan", identifier: "1002" });
+  check("nobody can join a closed assignment", after.ok === false && /closed/i.test(after.error), after.error);
+  s2.close(); s3.close();
+  await wait(100);
+}
+
+// ---------- the gradebook ----------
+async function testGradebook() {
+  console.log("\n# gradebook export");
+  const csv = await fetch(`${URL}/api/students/csv`).then((r) => r.text());
+  const [head, ...rows] = csv.trim().split("\n");
+  check("the gradebook has a column per game", head.startsWith("student,nicknames,") && head.includes("Every Question Type ("));
+  check("one row per student", rows.length >= 3, String(rows.length));
+  const ada = rows.find((r) => r.startsWith("Ada Lovelace,") || r.startsWith("1001,"));
+  check("a student who played is a row", !!ada, rows.slice(0, 3).join(" / "));
+  const points = await fetch(`${URL}/api/students/csv?metric=points`).then((r) => r.text());
+  check("points is the other metric", points.split("\n")[0] === head && points !== csv);
+  const cells = head.split(",").length;
+  check("every row has every column", rows.every((r) => r.split(",").length >= cells - 2), "rows with quoted titles may split differently");
+}
+
+// ---------- teams ----------
+async function testTeams() {
+  console.log("\n# teams");
+  const host = io(URL);
+  await once(host, "connect");
+  const game = await emit(host, "host:create", { quizId: "sample", teams: 2 });
+  check("a team game names its teams", game.ok && Array.isArray(game.teams) && game.teams.length === 2, JSON.stringify(game.teams));
+  const players = {};
+  const joins = [];
+  for (const n of ["Ada", "Bea", "Cid"]) {
+    const s = io(URL);
+    await once(s, "connect");
+    const j = await emit(s, "player:join", { pin: game.pin, name: n });
+    joins.push(j);
+    players[n] = s;
+  }
+  check("players are told their team", joins.every((j) => j.team && typeof j.team.name === "string"));
+  const sizes = {};
+  for (const j of joins) sizes[j.team.index] = (sizes[j.team.index] || 0) + 1;
+  check("teams are kept balanced", Object.values(sizes).sort().join(",") === "1,2", JSON.stringify(sizes));
+
+  let nextQ = once(host, "game:question");
+  host.emit("host:start", {});
+  const q = await nextQ;
+  const hostR = once(host, "game:results");
+  const adaR = once(players.Ada, "game:results");
+  await emit(players.Ada, "player:answer", 0);
+  await emit(players.Bea, "player:answer", 0);
+  await emit(players.Cid, "player:answer", (0 + 1) % q.choices.length);
+  const hr = await hostR;
+  const ar = await adaR;
+  check("the host leaderboard is the teams", hr.teams === true && hr.leaderboard.length === 2 && hr.leaderboard.every((t) => Array.isArray(t.members)), JSON.stringify(hr.leaderboard));
+  check("a team score is the average of its members", hr.leaderboard.every((t) => Number.isInteger(t.score)));
+  check("the phone gets its team's standing", ar.team && typeof ar.team.rank === "number" && typeof ar.team.score === "number", JSON.stringify(ar.team));
+
+  // play out and finish
+  for (let i = 0; i < 3; i++) {
+    const open = once(host, "game:question");
+    host.emit("host:next");
+    await open;
+    const done = once(host, "game:results");
+    for (const s of Object.values(players)) await emit(s, "player:answer", 0);
+    await done;
+  }
+  const ended = once(host, "game:end");
+  host.emit("host:next");
+  const end = await ended;
+  check("the final standings are teams, with the individual board alongside", end.teams === true && end.leaderboard.length === 2 && end.players.length === 3);
+  const rep = await fetch(`${URL}/api/reports/${end.reportId}`).then((r) => r.json());
+  check("the report records each player's team", rep.players.every((p) => /^Team /.test(p.team)), JSON.stringify(rep.players.map((p) => p.team)));
+
+  for (const s of Object.values(players)) s.close();
+  host.close();
+  await wait(100);
 }
